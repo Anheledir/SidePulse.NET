@@ -33,3 +33,16 @@ Spectre.Console, Spectre.Console.Cli and Spectre.Console.Ansi 0.57.2 are MIT
 licensed dependencies, copyright Patrik Svensson, Phil Scott, Nils Andresen, Cédric Luthi and contributors.
 Their repository license is retained in `third-party/spectre.console/LICENSE.md` and included in CI distribution artifacts.
 Test packages are development dependencies and are not part of the application.
+
+## Phone linking and credential storage
+
+`Pairing.cs` and `PhoneLink.cs` adapt the QR URI, SSE registration and APNS token
+normalization contracts from upstream `src/sidepulse/links.py` at the reference
+revision above. `LinkStore.cs` and CLI link management are new .NET implementations.
+The upstream MIT notice is retained with these adapted protocol portions.
+
+QRCoder 1.8.1 is MIT licensed, copyright Raffael Herrmann and Shane Krueger.
+Its original license is retained in `third-party/qrcoder/LICENSE.txt`.
+System.Security.Cryptography.ProtectedData 10.0.13 and the Microsoft libraries
+resolved with QRCoder are MIT licensed .NET components. Windows preview artifacts
+include the .NET license and third-party notices in `third-party/dotnet`.

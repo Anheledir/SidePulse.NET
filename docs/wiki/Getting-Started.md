@@ -2,8 +2,8 @@
 
 The first implementation is an alpha preview. USB discovery/writes, status profiles,
 raw programs, silent iPhone bridge delivery with an existing APNS token, session
-aggregation and a foreground Copilot CLI host are implemented. QR pairing, protected
-credential storage, background-service installation, full LED grammar validation,
+aggregation, QR pairing, Windows-protected phone links, diagnostics and a foreground
+Copilot CLI host are implemented. Background-service installation, full LED grammar validation,
 animation rendering, migration and other agent integrations remain planned.
 
 ## Build and run
@@ -41,21 +41,70 @@ Only one writer should control a device. Physical device behavior still needs
 Windows hardware verification. Validation checks the 512-byte/20-line envelope;
 the firmware remains responsible for LED syntax validation.
 
-## Phone delivery
-
-Set `SIDEPULSE_TOKEN` in the current process environment to an existing iPhone push
-token from the SidePulse app. Keep it out of scripts, command history, source
-control and screenshots. The preview does not read or modify the Python port's
-configuration, and does not persist tokens.
+## Pair an iPhone on Windows
 
 ```powershell
+sidepulse-net link pair iphone
+sidepulse-net link list
+sidepulse-net state done --phone iphone
+sidepulse-net host --phone default
+```
+
+Scan the terminal QR using the SidePulse app's pairing flow. The pairing URI is
+also shown for terminals without ANSI support or enough width. Pairing expires
+after five minutes, supports Ctrl+C cancellation and ignores unrelated or invalid
+registration events. `--timeout 60` shortens the wait; `--no-qr` shows only the URI.
+Treat the live pairing URI as temporary pairing access; keep it out of shared logs.
+Actual QR scanning with the TestFlight app still requires device verification.
+
+The entire link document, including names and tokens, is encrypted with Windows
+DPAPI for the current user. It is stored in `%LOCALAPPDATA%\SidePulse.NET\links.dpapi`.
+There is no plaintext fallback. The store uses exclusive locking and atomic encrypted
+file replacement. It preserves an unreadable store rather than overwriting it.
+`SIDEPULSE_NET_HOME` can select another absolute directory, for isolated configurations
+or testing; this does not make DPAPI credentials portable to another Windows user.
+The app does not read or modify the Python port's configuration.
+
+The first linked phone becomes the default. Selection is explicit via `--phone`;
+commands without a phone option continue to discover USB devices.
+
+```powershell
+sidepulse-net link rename iphone personal
+sidepulse-net link default personal
+sidepulse-net link list --json
+sidepulse-net link remove personal
+sidepulse-net doctor --json
+```
+
+Aliases are case-insensitive and use 1–40 letters, digits, underscores or hyphens.
+`default` is reserved. Existing aliases and duplicate tokens are rejected.
+Removing a default link clears the default; it never silently selects another phone.
+Removing a link only removes the local credential, and does not revoke the token
+at the phone or bridge. Listing links and diagnostics never display tokens.
+`doctor` checks local runtime, mounted devices, DPAPI/storage and hook-directory
+presence; it sends no device writes or network requests.
+
+## Existing tokens and other platforms
+
+If you already have an iPhone token, set `SIDEPULSE_TOKEN` in the current process
+environment. Keep the value out of command history, source control and screenshots.
+Save it securely on Windows, or use it directly without persistence:
+
+```powershell
+sidepulse-net link import iphone --token-env SIDEPULSE_TOKEN
 sidepulse-net state working --token-env SIDEPULSE_TOKEN
 sidepulse-net host --token-env SIDEPULSE_TOKEN
 ```
 
+Saved phone links and pairing currently require Windows. Linux/macOS support
+environment-token delivery without persistent storage. `--device`, `--phone` and
+`--token-env` are mutually exclusive. A dry run previews the program without
+reading credentials or validating that a saved phone exists.
+
 The bridge uses HTTPS and silent APNS payloads with unique event IDs. An HTTP
-success is bridge acceptance, not proof of delivery to the hardware. Android,
-custom bridge servers, phone registration and QR pairing are not implemented yet.
+success is bridge acceptance, not proof of delivery to the hardware. Android and
+custom bridge servers are not implemented yet. Pairing and delivery follow the
+upstream protocol at the revision in `upstream.json`.
 
 ## Copilot CLI on Windows
 

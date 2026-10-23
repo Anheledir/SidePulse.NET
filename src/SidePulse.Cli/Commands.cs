@@ -50,14 +50,17 @@ public class TargetSettings : CommandSettings
     [CommandOption("--token-env <NAME>")]
     [Description("Environment variable holding an iPhone push token. Selects phone delivery.")]
     public string? TokenEnvironment { get; init; }
+    [CommandOption("--phone <ALIAS>")]
+    [Description("Use a saved phone alias, or 'default'. Windows protected storage.")]
+    public string? Phone { get; init; }
     [CommandOption("--dry-run")]
     [Description("Preview the program without writing or sending anything.")]
     public bool DryRun { get; init; }
     [CommandOption("--json")]
     public bool Json { get; init; }
 
-    public override ValidationResult Validate() => Device is not null && TokenEnvironment is not null
-        ? ValidationResult.Error("Choose either --device or --token-env.") : ValidationResult.Success();
+    public override ValidationResult Validate() => new[] { Device, TokenEnvironment, Phone }.Count(v => v is not null) > 1
+        ? ValidationResult.Error("Choose one of --device, --token-env or --phone.") : ValidationResult.Success();
 }
 
 public static class Delivery
@@ -65,7 +68,13 @@ public static class Delivery
     public static async Task Send(TargetSettings settings, LedProgram program, CancellationToken cancellationToken)
     {
         if (settings.DryRun) return;
-        if (settings.TokenEnvironment is { } variable)
+        if (settings.Phone is { } alias)
+        {
+            var phone = PhoneStores.Open().Get(alias);
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            await new PhoneBridge(client).SendAsync(phone.Token, program, cancellationToken);
+        }
+        else if (settings.TokenEnvironment is { } variable)
         {
             var token = Environment.GetEnvironmentVariable(variable);
             if (string.IsNullOrWhiteSpace(token)) throw new ArgumentException("The selected token environment variable is empty.");

@@ -2,12 +2,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>sidepulse-net</AssemblyName>
-    <Version>0.1.0-alpha.1</Version>
+    <Version>0.1.0-alpha.2</Version>
     <Description>Unofficial SidePulse companion</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../SidePulse.Core/SidePulse.Core.csproj" />
+    <PackageReference Include="QRCoder" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Spectre.Console.Cli" />
   </ItemGroup>

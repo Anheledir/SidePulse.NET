@@ -59,12 +59,13 @@ dotnet run --project src/SidePulse.Cli -- dashboard
 
 
 The solution contains a portable core, a Spectre.Console CLI and behavioral tests.
-Implemented commands: `devices`, `state`, `write`, `dashboard`, `host` and
-`hook-config`. Use `--help` for details and `--dry-run` before sending a program.
+Implemented commands: `devices`, `state`, `write`, `dashboard`, `host`,
+`hook-config`, `doctor` and `link pair/list/import/default/rename/remove`. Use `--help` for details and `--dry-run` before sending a program.
 The command name `sidepulse-net` coexists with the existing Python port.
 
-QR pairing, protected token storage, a persistent service, full DSL validation,
-other upstream integrations and a signed installer remain planned. The wiki's
+QR pairing and protected token storage are available on Windows. A persistent
+service, full DSL validation, other upstream integrations and a signed installer
+remain planned. The wiki's
 concept pages describe the intended complete product; the getting-started page
 records what is implemented now.
 

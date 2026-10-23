@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.RegularExpressions;
 
 namespace SidePulse.Core;
 
@@ -7,9 +6,7 @@ public sealed class PhoneBridge(HttpClient client)
 {
     public async Task SendAsync(string token, LedProgram program, CancellationToken cancellationToken = default)
     {
-        // Initial implementation supports APNS registration tokens only; never print tokens or request URLs.
-        if (!Regex.IsMatch(token, @"\A(?:dev_)?[0-9a-f]{64}(?:_[A-Za-z0-9_-]{1,128})?\z"))
-            throw new ArgumentException("Invalid iPhone push token.");
+        token = PhoneTokens.Normalize(token);
         var payload = new Dictionary<string, object>
         {
             ["aps"] = new Dictionary<string, object> { ["content-available"] = 1 },

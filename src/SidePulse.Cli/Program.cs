@@ -6,7 +6,18 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("sidepulse-net");
-    config.SetApplicationVersion("0.1.0-alpha.1");
+    config.SetApplicationVersion("0.1.0-alpha.2");
+    config.AddBranch("link", links =>
+    {
+        links.SetDescription("Pair and manage protected iPhone links (Windows).");
+        links.AddCommand<PairPhoneCommand>("pair").WithDescription("Pair an iPhone by QR code.");
+        links.AddCommand<LinkListCommand>("list").WithDescription("List saved phones without exposing tokens.");
+        links.AddCommand<ImportPhoneCommand>("import").WithDescription("Save an existing token from an environment variable.");
+        links.AddCommand<DefaultPhoneCommand>("default").WithDescription("Choose the default saved phone.");
+        links.AddCommand<RenamePhoneCommand>("rename").WithDescription("Rename a phone alias.");
+        links.AddCommand<RemovePhoneCommand>("remove").WithDescription("Remove a local phone link.");
+    });
+    config.AddCommand<DoctorCommand>("doctor").WithDescription("Check local setup without sending to devices or the network.");
     config.AddCommand<DevicesCommand>("devices").WithDescription("List mounted SidePulse devices.");
     config.AddCommand<StateCommand>("state").WithDescription("Display an agent state on USB or iPhone.");
     config.AddCommand<WriteCommand>("write").WithDescription("Send a raw LED program with firmware envelope checks.");

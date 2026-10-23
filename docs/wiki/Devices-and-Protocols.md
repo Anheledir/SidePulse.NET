@@ -1,3 +1,7 @@
+> Implementation update: QR/SSE pairing for the default iPhone bridge and encrypted
+> Windows link storage are implemented. Android and custom bridge origins remain planned.
+> Hardware and TestFlight app verification are still pending. See [[Getting-Started]].
+
 # Devices and protocols
 
 ## Local hardware

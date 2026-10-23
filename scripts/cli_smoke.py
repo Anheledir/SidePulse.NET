@@ -11,8 +11,10 @@ import time
 def main():
     exe = str(Path(sys.argv[1]).resolve())
 
+    child_env = os.environ.copy()
+
     def run(*args, input=None):
-        result = subprocess.run([exe, *args], input=input, text=True, capture_output=True, timeout=10)
+        result = subprocess.run([exe, *args], input=input, text=True, capture_output=True, timeout=10, env=child_env)
         assert result.returncode == 0, (args, result.stdout, result.stderr)
         return result
 
@@ -23,6 +25,23 @@ def main():
     disconnected = run('hook', 'agentStop', input=json.dumps({'sessionId': 'a', 'timestamp': 1, 'stopReason': 'end_turn'}))
     assert not disconnected.stdout and not disconnected.stderr
     with tempfile.TemporaryDirectory(prefix='SidePulse test ü ') as directory:
+        child_env['SIDEPULSE_NET_HOME'] = str(Path(directory) / 'config')
+        checks = json.loads(run('doctor', '--json').stdout)
+        assert all(check['Status'] != 'error' for check in checks)
+        if os.name == 'nt':
+            token = 'a' * 64 + '_TestKey'
+            child_env['SIDEPULSE_TEST_TOKEN'] = token
+            run('link', 'import', 'iphone', '--token-env', 'SIDEPULSE_TEST_TOKEN')
+            phones = run('link', 'list', '--json').stdout
+            assert token not in phones
+            assert json.loads(phones)[0]['IsDefault']
+            blob = (Path(child_env['SIDEPULSE_NET_HOME']) / 'links.dpapi').read_bytes()
+            assert token.encode() not in blob
+            run('link', 'rename', 'iphone', 'personal')
+            run('link', 'default', 'personal')
+            run('state', 'done', '--phone', 'default', '--dry-run')
+            run('link', 'remove', 'personal')
+            assert json.loads(run('link', 'list', '--json').stdout) == []
         target = Path(directory) / 'LEDS.LED'
         target.write_text('off')
         run('state', 'waiting', '--device', directory)
