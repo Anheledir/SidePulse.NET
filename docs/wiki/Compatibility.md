@@ -18,7 +18,8 @@ implemented commands and test boundaries.
 | Destination selection, stdin and broadcast | M1 | Compatible ambiguity checks and explicit broadcast |
 | Built-in animations and LED counts | M1 | Source attribution, Dot/Pro geometry and brightness |
 | Copilot CLI hooks | Preview, Bash and PowerShell | Event fixtures and real CLI on each OS |
-| Codex, Claude, Cursor, Grok, Junie | M2 parity | Separate hook schemas, installation and permissions per provider |
+| Codex, Claude Code, Kiro CLI V3 | Preview | Native schema fixtures and simulated wrapper execution; real agent checks pending |
+| Cursor, Grok, Junie and other providers | M2 parity | Separate hooks and manual verification |
 | Session collection, history and aggregation | M1/M2 | Concurrent sessions, stale events and restart |
 | Optional transcript recovery | M2 investigation | Privacy, format drift and opt-in behavior |
 | Background host and service management | M1 Windows | Named-pipe access, foreground mode and login startup |

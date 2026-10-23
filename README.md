@@ -14,7 +14,7 @@ an agent is working, waiting for input or finished.
 
 - A live terminal dashboard for devices, agent sessions and recent events.
 - Fast, silent commands for hooks and scripts, alongside interactive setup.
-- Native Copilot CLI hooks, followed by the other upstream integrations.
+- Copilot CLI, Codex, Claude Code and Kiro CLI V3 hooks with shared status aggregation.
 - USB LED programs, iPhone linking and bridge delivery, animation previews and profiles.
 - Reliable session aggregation, device aliases, diagnostics and explicit configuration migration.
 - Self-contained Windows, macOS and Linux distributions without a Python dependency.
@@ -61,13 +61,13 @@ dotnet run --project src/SidePulse.Cli -- dashboard
 
 The solution contains a portable core, a Spectre.Console CLI and behavioral tests.
 Implemented commands: `devices`, `state`, `write`, `dashboard`, `host`,
-`hook-config`, `doctor` and `link pair/list/import/default/rename/remove`. Use `--help` for details and `--dry-run` before sending a program.
+`hook-config`, `doctor`, `agents list/install/status/uninstall`, host lifecycle
+commands and `link pair/list/import/default/rename/remove`. Use `--help` for details and `--dry-run` before sending a program.
 The command name `sidepulse-net` coexists with the existing Python port.
 
 QR pairing and protected token storage use DPAPI on Windows, Keychain on macOS
-and Secret Service on Linux. A persistent
-service, full DSL validation, other upstream integrations and a signed installer
-remain planned. The wiki's
+and Secret Service on Linux. Login-startup registration, full DSL validation,
+remaining upstream integrations and signed installers remain planned. The wiki's
 concept pages describe the intended complete product; the getting-started page
 records what is implemented now.
 
@@ -84,3 +84,20 @@ python -m unittest discover -s scripts/tests -v
 ```
 
 Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). License: [MIT](LICENSE).
+
+## Agent setup and background use
+
+```shell
+sidepulse-net agents install codex --dry-run
+sidepulse-net agents install codex
+sidepulse-net agents install claude
+sidepulse-net agents install kiro
+sidepulse-net agents install copilot
+sidepulse-net host start --phone default
+sidepulse-net host status
+sidepulse-net host stop
+```
+
+See [agent integrations](docs/wiki/Agent-Integrations.md) for provider capabilities,
+configuration backups and trust requirements, and [host management](docs/wiki/Host-Management.md)
+for logs and foreground use. Additional providers remain planned.

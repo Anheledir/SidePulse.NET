@@ -87,6 +87,7 @@ def main():
                     break
                 time.sleep(0.1)
             assert status()['State'] == 'Done'
+            assert 'DO-NOT-LOG-THIS' not in run('host', 'logs', '--tail', '10')
             run('host', 'stop', '--json')
             started = False
             assert not status()['Running']

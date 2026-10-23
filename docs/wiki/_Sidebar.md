@@ -15,3 +15,6 @@
 - [[Getting started|Getting-Started]]
 
 - [[Platforms]]
+
+- [[Agent integrations|Agent-Integrations]]
+- [[Host management|Host-Management]]

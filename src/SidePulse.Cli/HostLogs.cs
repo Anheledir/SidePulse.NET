@@ -36,7 +36,7 @@ public static class HostLogs
             if (writer is not null && writer.BaseStream.Length < 1048576) return writer;
             writer?.Dispose();
             if (File.Exists(path) && new FileInfo(path).Length >= 1048576) File.Move(path, path + ".previous", true);
-            var options = new FileStreamOptions { Mode = FileMode.Append, Access = FileAccess.Write, Share = FileShare.ReadWrite };
+            var options = new FileStreamOptions { Mode = FileMode.Append, Access = FileAccess.Write, Share = FileShare.ReadWrite | FileShare.Delete };
             if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
             writer = new StreamWriter(new FileStream(path, options), new UTF8Encoding(false)) { AutoFlush = true };
             return writer;
@@ -64,7 +64,15 @@ public sealed class HostLogsCommand : Command<HostLogsSettings>
     public override int Execute(CommandContext context, HostLogsSettings settings, CancellationToken cancellationToken)
     {
         if (!File.Exists(HostLogs.PathName)) { AnsiConsole.WriteLine("No background host log exists yet."); return 0; }
-        foreach (var line in File.ReadLines(HostLogs.PathName).TakeLast(settings.Tail)) Console.WriteLine(line);
+        using var file = new FileStream(HostLogs.PathName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(file);
+        var lines = new Queue<string>();
+        while (reader.ReadLine() is { } line)
+        {
+            lines.Enqueue(line);
+            if (lines.Count > settings.Tail) lines.Dequeue();
+        }
+        foreach (var line in lines) Console.WriteLine(line);
         return 0;
     }
 }

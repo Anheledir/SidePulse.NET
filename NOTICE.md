@@ -52,3 +52,10 @@ include the .NET license and third-party notices in `third-party/dotnet`.
 `PlatformSecrets.cs` and `MacKeychainVault.cs` are new implementations using native
 OS credential APIs/helpers and .NET AES-GCM. No third-party source was copied for
 these adapters. The credential APIs do not require a cloud account or token.
+
+## Agent adapters and host lifecycle
+
+`AgentEvents.cs`, `HookConfiguration.cs`, `HookInstallation.cs` and the associated
+CLI host/agent commands are new .NET implementations based on the public provider
+protocols linked in `docs/wiki/Agent-Integrations.md`. No provider application
+source or transcript data is copied. The adapter tests use synthetic payloads.

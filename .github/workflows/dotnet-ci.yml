@@ -43,6 +43,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     env:
       SIDEPULSE_NATIVE_VAULT_TESTS: '1'
     steps:

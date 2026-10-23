@@ -1,10 +1,14 @@
+> Shared background host commands and managed setup for Codex, Claude Code, Kiro
+> and Copilot are now implemented. See [[Host-Management]] and [[Agent-Integrations]].
+> The manual Copilot hook generation below remains available for existing users.
+
 # Getting started with the implementation preview
 
 The first implementation is an alpha preview. USB discovery/writes, status profiles,
 raw programs, silent iPhone bridge delivery with an existing APNS token, session
 aggregation, QR pairing, native protected phone links, diagnostics and a foreground
 Copilot CLI host are implemented. Background-service installation, full LED grammar validation,
-animation rendering, migration and other agent integrations remain planned.
+animation rendering, migration and remaining agent integrations remain planned.
 
 ## Build and run
 
