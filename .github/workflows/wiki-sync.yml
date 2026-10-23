@@ -1,0 +1,55 @@
+name: Wiki sync
+on:
+  push:
+    paths:
+      - docs/wiki/**
+      - scripts/sync_wiki.py
+      - .github/workflows/wiki-sync.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wiki-sync
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: >-
+      vars.WIKI_SYNC_ENABLED == 'true' &&
+      github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    env:
+      WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Clone initialized wiki
+        shell: bash
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ -z "$WIKI_TOKEN" ]; then
+            echo '::error::Add WIKI_TOKEN and initialize the repository wiki before enabling sync.'
+            exit 1
+          fi
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$WIKI_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=$auth" clone --depth 1 \
+            "https://github.com/${REPOSITORY}.wiki.git" "$RUNNER_TEMP/sidepulse-wiki"
+      - name: Stage reviewed wiki sources
+        run: python3 scripts/sync_wiki.py docs/wiki "$RUNNER_TEMP/sidepulse-wiki"
+      - name: Commit and publish changed pages
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/sidepulse-wiki"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          if git diff --cached --quiet; then
+            echo 'Wiki already matches reviewed sources.'
+            exit 0
+          fi
+          git commit -m 'docs: synchronize reviewed SidePulse.NET wiki sources'
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$WIKI_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=$auth" push origin HEAD

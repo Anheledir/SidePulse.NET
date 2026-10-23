@@ -1,0 +1,79 @@
+[
+  {
+    "title": "M0: Review product concept and compatibility boundaries",
+    "labels": [
+      "documentation"
+    ],
+    "body": "Approve terminal workflow, .NET 10 baseline, initial sidepulse-net command, aggregation priorities and explicit platform exclusions. Record decisions before C# scaffolding.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Port LED language and upstream validation vectors",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Verify escapes, 512-byte and 20-line limits, LED counts, brightness, invalid input and attributed fixtures against the pinned upstream revision.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Implement writable USB device transport on Windows",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Discover volumes, select destinations and write/flush programs. Verify a real Dot and removal, read-only and ambiguous-device cases.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Implement phone pairing and bridge delivery",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Pair original iOS app, protect credentials, support target selection and separate silent LED updates from visible notifications. Test offline delivery and show only supported acknowledgement levels.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Implement shared host and session state reduction",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Version current-user IPC, aggregate concurrent sessions, ignore late events, persist minimal restart metadata and serialize outputs. Hooks must not wait on network I/O.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Implement Copilot CLI hook integration",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Install/repair/remove dedicated hooks, handle real waiting notifications and turn ends, avoid permission decisions, preserve unrelated hooks and verify a real Windows CLI session.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Design and implement the Spectre terminal experience",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Prototype live dashboard/menu interaction, compact layout, session/device views, terminal capabilities, keyboard flow and plain/JSON/noninteractive modes.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M1: Add diagnostics, aliases and explicit migration",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Explain broken integrations/paths and transport failures; add device aliases and import preview/backup without modifying the existing Python port silently.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M2: Port remaining upstream integrations and remote relay",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Track Codex, Claude, Cursor, Grok and Junie separately, plus relay and Android. Record payload compatibility and hardware verification per inventory row.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "M3: Build verified self-contained Windows releases",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Introduce release workflow after real projects/tests exist; produce x64/arm64 artifacts and checksums, verify install/uninstall and document signing/package-manager decisions.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  },
+  {
+    "title": "Investigate firmware, raw USB and platform-specific helpers",
+    "labels": [
+      "documentation"
+    ],
+    "body": "Decide feasibility and safety tests for firmware recovery, read-only USB control, Windows drivers, macOS guards/power helpers and the optional MLX classifier. Do not imply parity before verification.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+  }
+]

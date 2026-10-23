@@ -1,0 +1,23 @@
+name: Quality
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Documentation and configuration checks
+        run: python3 scripts/check_docs.py
+      - name: Documentation tooling tests
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Commit whitespace
+        run: git log -1 --check --oneline

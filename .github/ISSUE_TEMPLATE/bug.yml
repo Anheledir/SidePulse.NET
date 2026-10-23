@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a problem in implemented functionality.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: SidePulse.NET version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows, terminal and device versions
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and redacted diagnostics
+      description: Remove push tokens, pairing secrets and prompt content.
+    validations:
+      required: true

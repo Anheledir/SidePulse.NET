@@ -1,0 +1,18 @@
+# SidePulse.NET
+
+**An unofficial .NET companion for SidePulse.**
+
+This wiki describes the proposed product. Application implementation has not
+started, and no SidePulse.NET binaries are available yet.
+
+Start with [[Product-Concept]], [[Terminal-Experience]] and [[Roadmap]].
+Technical detail lives in [[Architecture]], [[Compatibility]], [[Devices-and-Protocols]],
+[[Copilot-CLI]] and [[Configuration]].
+Repository automation and wiki publishing are covered by [[Project-Setup]].
+Credits, provenance and references are in [[Upstream-and-Licensing]].
+
+The source of truth is `docs/wiki` in the main repository. Changes are reviewed
+there and can be published into the separate GitHub wiki Git repository.
+
+The original project is [inteliwear/sidepulse](https://github.com/inteliwear/sidepulse),
+created by Peter Kuhar / InteliWEAR. SidePulse.NET is independently maintained.

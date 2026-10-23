@@ -1,0 +1,17 @@
+# Future .NET / Visual Studio work
+.vs/
+.vscode/
+**/bin/
+**/obj/
+TestResults/
+artifacts/
+*.user
+*.suo
+# Local credentials and temporary work
+.env
+.env.*
+!.env.example
+*.pfx
+*.snupkg
+__pycache__/
+.venv/

@@ -1,0 +1,66 @@
+name: .NET CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dotnet-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      solution: ${{ steps.detect.outputs.solution }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: detect
+        name: Detect application solution
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          solutions = sorted(list(Path('.').glob('*.slnx')) + list(Path('.').glob('*.sln')))
+          if len(solutions) > 1:
+              raise SystemExit('Expected one root-level solution; update the workflow for multiple solutions.')
+          solution = str(solutions[0]) if solutions else ''
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'solution={solution}\n')
+          if not solution:
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                  summary.write('Concept phase: no solution exists. Build/test jobs are intentionally skipped.\n')
+          PY
+  build:
+    needs: detect
+    if: needs.detect.outputs.solution != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        env:
+          SOLUTION: ${{ needs.detect.outputs.solution }}
+        shell: pwsh
+        run: dotnet restore $env:SOLUTION
+      - name: Build
+        env:
+          SOLUTION: ${{ needs.detect.outputs.solution }}
+        shell: pwsh
+        run: dotnet build $env:SOLUTION --configuration Release --no-restore
+      - name: Test
+        env:
+          SOLUTION: ${{ needs.detect.outputs.solution }}
+        shell: pwsh
+        run: dotnet test $env:SOLUTION --configuration Release --no-build
