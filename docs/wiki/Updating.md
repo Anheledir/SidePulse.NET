@@ -54,7 +54,9 @@ across the two directory renames. A power failure between them may require resto
 the backup directory manually before the CLI can run again.
 
 Unknown user-added files are copied into the new directory unless they collide
-with a new application-owned file. Avoid editing the installation during updating.
+with a new application-owned file. Existing directory access permissions and access
+permissions on user-added files are preserved. Avoid editing the installation
+during updating.
 Phone links, profiles and hooks normally live outside it and are not changed.
 The complete old installation and temporary download/helper workspace are retained
 for recovery. Once installation is confirmed and no helper is running, these

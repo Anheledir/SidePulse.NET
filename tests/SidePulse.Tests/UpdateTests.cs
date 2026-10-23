@@ -136,9 +136,23 @@ public sealed class UpdateTests
     {
         using var fixture = new Installation();
         File.WriteAllText(System.IO.Path.Combine(fixture.Target, "personal.txt"), "keep me");
+        var privateFolder = System.IO.Path.Combine(fixture.Target, "private");
+        Directory.CreateDirectory(privateFolder);
+        File.WriteAllText(System.IO.Path.Combine(privateFolder, "personal.txt"), "private data");
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(fixture.Target, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            File.SetUnixFileMode(privateFolder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         var plan = fixture.Prepare();
         await UpdateTransaction.Apply(plan, (target, _) => { Assert.Equal("2.0.0", InstallationManifest.Read(target).Version); return Task.CompletedTask; });
         Assert.Equal("keep me", File.ReadAllText(System.IO.Path.Combine(fixture.Target, "personal.txt")));
+        if (!OperatingSystem.IsWindows())
+        {
+            var privateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+            Assert.Equal(privateMode, File.GetUnixFileMode(fixture.Target));
+            Assert.Equal(privateMode, File.GetUnixFileMode(System.IO.Path.Combine(fixture.Target, "private")));
+        }
         Assert.Equal("1.0.0", InstallationManifest.Read(plan.Backup).Version);
         Assert.Equal("installed", UpdateTransaction.Status(fixture.Target)!.State);
     }

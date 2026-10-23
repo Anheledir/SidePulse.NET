@@ -53,7 +53,10 @@ public static class UpdateTransaction
             if (nextFiles.Contains(relative)) throw new IOException("A new application file would overwrite a user-added file: " + relative);
             var destination = InstallationManifest.Resolve(stage, relative);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!); File.Copy(path, destination, false);
+            if (OperatingSystem.IsWindows()) FileSystemAclExtensions.SetAccessControl(new FileInfo(destination), FileSystemAclExtensions.GetAccessControl(new FileInfo(path), System.Security.AccessControl.AccessControlSections.Access));
+            else File.SetUnixFileMode(destination, File.GetUnixFileMode(path));
         }
+        PreserveDirectoryAccess(target, stage);
         var helper = Path.Combine(job, "helper");
         Directory.CreateDirectory(helper);
         foreach (var file in current.Files)
@@ -69,13 +72,26 @@ public static class UpdateTransaction
         Receipt(plan, "prepared");
         return plan;
     }
+    private static void PreserveDirectoryAccess(string source, string destination)
+    {
+        foreach (var child in Directory.EnumerateDirectories(source))
+        {
+            if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) != 0) throw new IOException("Symbolic links are not supported in an updated installation.");
+            var next = Path.Combine(destination, Path.GetFileName(child));
+            Directory.CreateDirectory(next);
+            PreserveDirectoryAccess(child, next);
+        }
+        if (OperatingSystem.IsWindows()) FileSystemAclExtensions.SetAccessControl(new DirectoryInfo(destination), FileSystemAclExtensions.GetAccessControl(new DirectoryInfo(source), System.Security.AccessControl.AccessControlSections.Access));
+        else File.SetUnixFileMode(destination, File.GetUnixFileMode(source));
+    }
     public static void Validate(UpdatePlan plan)
     {
         foreach (var path in new[] { plan.Target, plan.Stage, plan.Backup, plan.Job, plan.Receipt }) if (!Path.IsPathFullyQualified(path)) throw new IOException("Update plan paths must be absolute.");
         var parent = Path.GetDirectoryName(plan.Target);
         if (string.IsNullOrEmpty(parent) || plan.Target == plan.Job || plan.Target == Path.GetPathRoot(plan.Target) || Path.GetDirectoryName(plan.Job) != parent || Path.GetDirectoryName(plan.Backup) != parent
             || plan.Stage != Path.Combine(plan.Job, "stage") || !Path.GetFileName(plan.Job).StartsWith(".sidepulse-update-", StringComparison.Ordinal)
-            || !plan.Backup.StartsWith(plan.Target + ".backup-", StringComparison.Ordinal) || plan.Receipt != ReceiptPath(plan.Target)) throw new IOException("Invalid update plan layout.");
+            || !plan.Backup.StartsWith(plan.Target + ".backup-", StringComparison.Ordinal)) throw new IOException("Invalid update plan layout.");
+        if (!plan.Receipt.Equals(ReceiptPath(plan.Target), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) throw new IOException("Update receipt path does not match the installation.");
         _ = new ReleaseVersion(plan.Version);
     }
     public static async Task Apply(UpdatePlan plan, Func<string, CancellationToken, Task> probe, CancellationToken cancellationToken = default)

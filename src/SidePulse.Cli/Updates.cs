@@ -112,7 +112,7 @@ public sealed class UpdateStatusCommand : Command<UpdateSettings>
     public override int Execute(CommandContext context, UpdateSettings settings, CancellationToken cancellationToken)
     {
         var status = UpdateTransaction.Status(Updater.Target);
-        Updater.Print(settings, (object?)status ?? new { state = "none" }, status is null ? "No recorded update for this installation." : $"{status.State}: {status.Version}\nBackup: {status.Backup}\nWorkspace: {status.Job}" + (status.Error is null ? "" : "\n" + status.Error));
+        Updater.Print(settings, (object?)status ?? new { state = "none", receipt = UpdateTransaction.ReceiptPath(Updater.Target) }, status is null ? "No recorded update for this installation." : $"{status.State}: {status.Version}\nBackup: {status.Backup}\nWorkspace: {status.Job}" + (status.Error is null ? "" : "\n" + status.Error));
         return status?.State is "failed" or "recovery-required" ? 1 : 0;
     }
 }
@@ -130,7 +130,8 @@ public sealed class ApplyUpdateCommand : AsyncCommand<ApplyUpdateSettings>
             if (!OperatingSystem.IsWindows()) HostLogs.Detach();
             plan = JsonSerializer.Deserialize<UpdatePlan>(await File.ReadAllTextAsync(settings.Plan, cancellationToken), InstallationManifest.Json) ?? throw new IOException("Missing update plan.");
             UpdateTransaction.Validate(plan);
-            if (Path.GetFullPath(settings.Plan) != Path.Combine(plan.Job, "plan.json") || Updater.Target != Path.Combine(plan.Job, "helper")) throw new IOException("Update helpers must run from their prepared workspace.");
+            var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            if (!Path.GetFullPath(settings.Plan).Equals(Path.Combine(plan.Job, "plan.json"), comparison) || !Updater.Target.Equals(Path.Combine(plan.Job, "helper"), comparison)) throw new IOException("Update helpers must run from their prepared workspace.");
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); deadline.CancelAfter(TimeSpan.FromSeconds(60));
             try
             {
@@ -141,13 +142,13 @@ public sealed class ApplyUpdateCommand : AsyncCommand<ApplyUpdateSettings>
             await UpdateTransaction.Apply(plan, (target, token) => Updater.Probe(target, plan.Version, token), deadline.Token);
             return 0;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             if (plan is not null)
             {
                 UpdateTransaction.Validate(plan);
                 var existing = UpdateTransaction.Status(plan.Target);
-                if (existing?.State is not ("failed" or "recovery-required")) UpdateTransaction.Receipt(plan, "failed", "Update helper failed before replacement; check workspace permissions and update status. The backup is retained when present.");
+                if (existing?.State is not ("failed" or "recovery-required")) UpdateTransaction.Receipt(plan, "failed", "Update helper failed before replacement: " + ex.Message + " The backup is retained when present.");
             }
             return 1;
         }
