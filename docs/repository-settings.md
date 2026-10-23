@@ -26,10 +26,12 @@ admin settings have been changed in this review.
   It does not replace checking existing dependencies or advisory triage.
 - All third-party Actions are pinned. Default permissions are `contents: read`;
   only jobs that need publication or SARIF upload receive write permissions.
-- The initial native review-fix CI passed 96 tests per OS and dependency review.
-  All three CodeQL analyses ran; the combined check reported one high-severity
-  Zip Slip alert. Canonical containment hardening is being reanalyzed. Scan-job
-  success alone is not a clean CodeQL result. Check names are recorded in JSON.
+- Final reviewed code `f1ada51` passed 104 tests per OS in
+  [native CI](https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767890),
+  including updater replacement/rollback. Quality and dependency review passed.
+  [All three CodeQL analyses and the combined alert check](https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767819)
+  passed after canonical containment hardening. The combined result reports no new
+  alerts. No rule was suppressed or alert dismissed. Exact check names are in JSON.
 - SECURITY.md supplies reporting guidance and documents updater/IPC trust limits.
 - Wiki publishing and upstream review run only from the default branch.
 
@@ -50,7 +52,9 @@ Protect main with PRs, resolved conversations, current checks, and blocked branc
 force-push/deletion. For this personal repository use zero required approvals so
 the sole maintainer is not locked out by GitHub's self-approval restriction.
 Require exact successful check contexts only after they have run: documentation,
-all three native build jobs, CodeQL for C#/Python/Actions, and dependency review.
+all three native build jobs, CodeQL for C#/Python/Actions, the combined `CodeQL`
+alert check, and dependency review. Analysis-job success alone does not imply no
+security alerts; require the combined alert check as well.
 Do not invent check names or enforce checks that have never completed.
 
 Record each applied change, observed value and date here and in JSON. If an option

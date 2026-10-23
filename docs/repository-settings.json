@@ -48,7 +48,18 @@
       "requireUpToDateBranch": true,
       "blockForcePushes": true,
       "blockDeletion": true,
-      "requiredChecksPolicy": "Require Quality, all three native build jobs, CodeQL and dependency review after successful check names are observed."
+      "requiredChecksPolicy": "Require Quality, all three native build jobs, CodeQL and dependency review after successful check names are observed.",
+      "requiredCheckNames": [
+        "documentation",
+        "build (windows-latest)",
+        "build (ubuntu-latest)",
+        "build (macos-latest)",
+        "CodeQL (csharp)",
+        "CodeQL (python)",
+        "CodeQL (actions)",
+        "Dependency review",
+        "CodeQL"
+      ]
     }
   },
   "verificationLimits": {
@@ -59,12 +70,12 @@
     "appliedRemoteSettings": []
   },
   "verifiedPullRequestChecks": {
-    "commit": "1839c3d763f4bcaa3762cbc8958c9183742181a8",
-    "nativeCI": "https://github.com/Anheledir/SidePulse.NET/actions/runs/40039097045",
-    "nativeTestsPerOS": 96,
+    "commit": "f1ada51a836a91e2420e507ac589e195b9990ab5",
+    "nativeCI": "https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767890",
+    "nativeTestsPerOS": 104,
     "quality": "passed",
     "dependencyReview": "passed",
-    "codeQL": "Initial combined check failed: one high-severity cs/zipslip alert. Canonical containment hardening awaits reanalysis.",
+    "codeQL": "C#, Python and Actions analyses passed; combined CodeQL check reports no new alerts after canonical containment hardening. No suppression or dismissal.",
     "observedCheckNames": [
       "documentation",
       "build (windows-latest)",
@@ -75,6 +86,7 @@
       "CodeQL (actions)",
       "Dependency review",
       "CodeQL"
-    ]
+    ],
+    "securityRun": "https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767819"
   }
 }
