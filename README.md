@@ -23,8 +23,8 @@ features and later Linux/macOS support are tracked individually.
 
 ## Documentation
 
-The editable wiki sources live in [docs/wiki](docs/wiki/Home.md), and are ready
-for publication to the repository's GitHub Wiki.
+Read the published [project wiki](https://github.com/Anheledir/SidePulse.NET/wiki).
+The editable source of truth lives in [docs/wiki](docs/wiki/Home.md).
 
 - [Product concept](docs/wiki/Product-Concept.md)
 - [Architecture](docs/wiki/Architecture.md)
@@ -55,7 +55,8 @@ proposals, not currently executable instructions.
 
 The initial repository contains documentation checks, conditional .NET CI,
 optional wiki publication, Dependabot configuration, issue templates and a
-prepared backlog. It does not claim a passing application build or test suite.
+backlog of [11 planning issues](https://github.com/Anheledir/SidePulse.NET/issues).
+It does not claim a passing application build or test suite.
 
 Run the current checks with Python 3:
 
