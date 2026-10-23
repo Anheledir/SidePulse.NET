@@ -105,12 +105,21 @@ public sealed class UpdateTests
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         { await Task.Delay(Timeout.Infinite, cancellationToken); return 0; }
     }
-    [Fact]
-    public async Task DirectoryOnlyArchiveEntriesAreBounded()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DirectoryOnlyArchiveEntriesAreBounded(bool tarFormat)
     {
         using var temp = new Temp();
-        var archive = System.IO.Path.Combine(temp.Path, "directories.zip");
-        using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create))
+        var archive = System.IO.Path.Combine(temp.Path, tarFormat ? "directories.tar.gz" : "directories.zip");
+        if (tarFormat)
+        {
+            using var output = File.Create(archive);
+            using var gzip = new GZipStream(output, CompressionMode.Compress);
+            using var tar = new TarWriter(gzip);
+            for (var i = 0; i <= 10000; i++) tar.WriteEntry(new PaxTarEntry(TarEntryType.Directory, $"directory-{i}/"));
+        }
+        else using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create))
             for (var i = 0; i <= 10000; i++) zip.CreateEntry($"directory-{i}/");
         var error = await Assert.ThrowsAsync<IOException>(() => UpdatePackage.Extract(archive, System.IO.Path.Combine(temp.Path, "stage"), "1.0.0", "win-x64"));
         Assert.Contains("entry limit", error.Message);
@@ -125,19 +134,35 @@ public sealed class UpdateTests
         Assert.Equal(hash, GitHubReleases.Checksum(hash + " *package.zip\r\n", "package.zip"));
     }
     [Theory]
-    [InlineData("../escaped.txt")]
-    [InlineData("/absolute.txt")]
-    [InlineData("C:/absolute.txt")]
-    [InlineData("sub\\escaped.txt")]
-    [InlineData("sub/../escaped.txt")]
-    public async Task ArchivePathsCannotEscapeStaging(string path)
+    [InlineData("../escaped.txt", false)]
+    [InlineData("/absolute.txt", false)]
+    [InlineData("C:/absolute.txt", false)]
+    [InlineData("sub\\escaped.txt", false)]
+    [InlineData("sub/../escaped.txt", false)]
+    [InlineData("../stage-sibling/escaped.txt", false)]
+    [InlineData("../escaped.txt", true)]
+    [InlineData("/absolute.txt", true)]
+    [InlineData("C:/absolute.txt", true)]
+    [InlineData("sub\\escaped.txt", true)]
+    [InlineData("sub/../escaped.txt", true)]
+    [InlineData("../stage-sibling/escaped.txt", true)]
+    public async Task ArchivePathsCannotEscapeStaging(string path, bool tarFormat)
     {
-        using var temp = new Temp(); var archive = System.IO.Path.Combine(temp.Path, "bad.zip");
-        using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create)) { using var writer = new StreamWriter(zip.CreateEntry(path).Open()); writer.Write("bad"); }
+        using var temp = new Temp(); var archive = System.IO.Path.Combine(temp.Path, tarFormat ? "bad.tar.gz" : "bad.zip");
+        if (tarFormat)
+        {
+            using var output = File.Create(archive);
+            using var gzip = new GZipStream(output, CompressionMode.Compress);
+            using var tar = new TarWriter(gzip);
+            using var bytes = new MemoryStream(Encoding.UTF8.GetBytes("bad"));
+            tar.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, path) { DataStream = bytes });
+        }
+        else using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create)) { using var writer = new StreamWriter(zip.CreateEntry(path).Open()); writer.Write("bad"); }
         var stage = System.IO.Path.Combine(temp.Path, "stage");
         await Assert.ThrowsAsync<IOException>(() => UpdatePackage.Extract(archive, stage, "1.0.0", "linux-x64"));
         Assert.False(Directory.Exists(stage));
         Assert.False(File.Exists(System.IO.Path.Combine(temp.Path, "escaped.txt")));
+        Assert.False(File.Exists(System.IO.Path.Combine(temp.Path, "stage-sibling", "escaped.txt")));
     }
     [Theory]
     [InlineData(false)]

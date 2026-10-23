@@ -26,6 +26,10 @@ admin settings have been changed in this review.
   It does not replace checking existing dependencies or advisory triage.
 - All third-party Actions are pinned. Default permissions are `contents: read`;
   only jobs that need publication or SARIF upload receive write permissions.
+- The initial native review-fix CI passed 96 tests per OS and dependency review.
+  All three CodeQL analyses ran; the combined check reported one high-severity
+  Zip Slip alert. Canonical containment hardening is being reanalyzed. Scan-job
+  success alone is not a clean CodeQL result. Check names are recorded in JSON.
 - SECURITY.md supplies reporting guidance and documents updater/IPC trust limits.
 - Wiki publishing and upstream review run only from the default branch.
 

@@ -20,7 +20,19 @@
   "desired": {
     "description": "Unofficial cross-platform SidePulse companion in C# and Spectre.Console: agent status hooks, LED patterns, iPhone pairing and verified updates.",
     "homepage": "https://github.com/Anheledir/SidePulse.NET/wiki",
-    "topics": ["sidepulse", "dotnet", "csharp", "spectre-console", "cli", "cross-platform", "github-copilot", "codex", "claude-code", "kiro", "led"],
+    "topics": [
+      "sidepulse",
+      "dotnet",
+      "csharp",
+      "spectre-console",
+      "cli",
+      "cross-platform",
+      "github-copilot",
+      "codex",
+      "claude-code",
+      "kiro",
+      "led"
+    ],
     "hasProjects": true,
     "privateVulnerabilityReporting": true,
     "dependabotAlerts": true,
@@ -45,5 +57,24 @@
     "securityAndAnalysis": "Not exposed by repository response; unknown, not assumed disabled.",
     "projects": "Repository Projects feature observed disabled. No project board has been created.",
     "appliedRemoteSettings": []
+  },
+  "verifiedPullRequestChecks": {
+    "commit": "1839c3d763f4bcaa3762cbc8958c9183742181a8",
+    "nativeCI": "https://github.com/Anheledir/SidePulse.NET/actions/runs/40039097045",
+    "nativeTestsPerOS": 96,
+    "quality": "passed",
+    "dependencyReview": "passed",
+    "codeQL": "Initial combined check failed: one high-severity cs/zipslip alert. Canonical containment hardening awaits reanalysis.",
+    "observedCheckNames": [
+      "documentation",
+      "build (windows-latest)",
+      "build (ubuntu-latest)",
+      "build (macos-latest)",
+      "CodeQL (csharp)",
+      "CodeQL (python)",
+      "CodeQL (actions)",
+      "Dependency review",
+      "CodeQL"
+    ]
   }
 }

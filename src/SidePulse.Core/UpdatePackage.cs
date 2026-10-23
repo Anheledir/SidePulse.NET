@@ -76,7 +76,12 @@ public static class UpdatePackage
         {
             name = InstallationManifest.Relative(name);
             if (++count > 10000 || length < 0 || length > 512L * 1024 * 1024 || (total += length) > 1024L * 1024 * 1024 || !names.Add(name)) throw new IOException("Update archive exceeds its limits or contains duplicate paths.");
-            var path = InstallationManifest.Resolve(destination, name);
+            // Validate the final canonical path as well as the portable manifest name.
+            // Include the separator so a sibling with the same prefix is never accepted.
+            var path = Path.GetFullPath(InstallationManifest.Resolve(destination, name));
+            var root = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            if (!path.StartsWith(root, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                throw new IOException("Archive entry is outside the staging directory.");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             await using var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             await GitHubReleases.CopyBounded(source, output, length, cancellationToken);
