@@ -20,7 +20,7 @@ public static class TerminalMode
         var noColor = options.Contains("--no-color") || Environment.GetEnvironmentVariable("NO_COLOR") is not null || Console.IsOutputRedirected;
         ColorEnabled = !noColor;
         if (Quiet && !Json) Console.SetOut(TextWriter.Null);
-        if (noColor || Quiet) AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Out), Ansi = Console.IsOutputRedirected || Quiet ? AnsiSupport.No : AnsiSupport.Detect, ColorSystem = ColorSystemSupport.NoColors });
+        if (noColor || Quiet) AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Out), Ansi = Console.IsOutputRedirected || Quiet ? AnsiSupport.No : AnsiSupport.Detect, ColorSystem = ColorSystemSupport.NoColors, Enrichment = new ProfileEnrichment { UseDefaultEnrichers = false } });
         var literal = false;
         var result = args.Where(a => { if (a == "--") literal = true; return literal || a is not "--quiet" and not "--no-interactive" and not "--no-color"; }).ToList();
         // Spectre binds JSON to individual commands; normalize a leading global spelling.

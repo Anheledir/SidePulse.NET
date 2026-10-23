@@ -52,7 +52,16 @@ def main(executable):
 
             def finish(self):
                 try:
-                    assert self.process.wait(timeout=10) == 0
+                    # Keep consuming terminal output while the app clears/redraws on exit.
+                    # macOS PTYs have small buffers; waiting without reading can block it.
+                    deadline = time.monotonic() + 10
+                    while self.process.poll() is None and time.monotonic() < deadline:
+                        if select.select([self.master], [], [], 0.1)[0]:
+                            try:
+                                self.output += os.read(self.master, 65536)
+                            except OSError:
+                                break
+                    assert self.process.wait(timeout=1) == 0, self.output[-3000:]
                 finally:
                     if self.process.poll() is None:
                         self.process.kill()

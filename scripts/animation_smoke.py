@@ -11,7 +11,7 @@ def main(executable):
     executable = str(Path(executable).resolve())
     with tempfile.TemporaryDirectory(prefix='sidepulse animations ü ') as temporary:
         root = Path(temporary)
-        env = dict(os.environ, SIDEPULSE_NET_HOME=str(root / 'config'), NO_COLOR='1', FORCE_COLOR='1')
+        env = dict(os.environ, SIDEPULSE_NET_HOME=str(root / 'config'), NO_COLOR='1', FORCE_COLOR='1', GITHUB_ACTIONS='true')
 
         def run(*args, code=0):
             result = subprocess.run([executable, *args], env=env, capture_output=True, text=True, timeout=10)
