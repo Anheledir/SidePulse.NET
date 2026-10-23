@@ -22,7 +22,9 @@ public static class HostControl
         await pipe.WriteAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { Command = command }) + "\n"), deadline.Token);
         await pipe.FlushAsync(deadline.Token);
         using var reader = new StreamReader(pipe, Encoding.UTF8);
-        var response = await reader.ReadToEndAsync(deadline.Token);
+        var response = await reader.ReadLineAsync(deadline.Token) ?? throw new IOException("The host closed without a response.");
+        await pipe.WriteAsync(new byte[] { 10 }, deadline.Token);
+        await pipe.FlushAsync(deadline.Token);
         return JsonSerializer.Deserialize<HostSnapshot>(response, Output.Json) ?? throw new IOException("Invalid host response.");
     }
 }

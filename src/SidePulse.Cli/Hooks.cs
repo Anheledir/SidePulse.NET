@@ -162,9 +162,12 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                         var action = command.GetString();
                         if (action is "status" or "stop")
                         {
-                            var response = JsonSerializer.SerializeToUtf8Bytes(new HostSnapshot(true, Environment.ProcessId, sessions.State, sessions.Snapshot), Output.Json);
-                            await pipe.WriteAsync(response, deadline.Token);
+                            var response = JsonSerializer.SerializeToUtf8Bytes(new HostSnapshot(true, Environment.ProcessId, sessions.State, sessions.Snapshot));
+                            await pipe.WriteAsync(response.Concat(new byte[] { 10 }).ToArray(), deadline.Token);
                             await pipe.FlushAsync(deadline.Token);
+                            // Windows disconnect discards unread reply bytes. Wait for a bounded receipt
+                            // acknowledgement before disconnecting; no unbounded pipe drain is needed.
+                            await pipe.ReadAsync(new byte[1], deadline.Token);
                             if (action == "stop") shutdown.Cancel();
                         }
                         continue;
