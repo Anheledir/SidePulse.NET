@@ -1,6 +1,7 @@
 # Architecture
 
-Status: proposed; no application components have been implemented.
+Status: target architecture. The first preview implements a core library, CLI,
+foreground host and current-user IPC. See [[Getting-Started]] for limitations.
 
 ## Boundaries
 
