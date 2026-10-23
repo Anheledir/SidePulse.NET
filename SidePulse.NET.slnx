@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SidePulse.Cli/SidePulse.Cli.csproj" />
+    <Project Path="src/SidePulse.Core/SidePulse.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SidePulse.Tests/SidePulse.Tests.csproj" />
+  </Folder>
+</Solution>

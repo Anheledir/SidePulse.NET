@@ -2,7 +2,9 @@
 
 An unofficial .NET companion for SidePulse, with a Spectre.Console terminal interface.
 
-**Status: concept and project preparation. No C# application, downloads or feature-complete port exist yet.**
+**Status: first C# implementation preview. Feature parity and hardware validation are still in progress.**
+
+Start with [Getting started](docs/wiki/Getting-Started.md) for build, USB, phone delivery and Copilot CLI instructions.
 
 SidePulse.NET will bring the SidePulse workflow to a native Windows application:
 pair a phone or connect a USB device, enable an agent integration, and see when
@@ -45,23 +47,37 @@ The reference baseline is upstream commit
 [`ffb1d3c2f3eed3b7e80e32d7876a7e1d67bd5dfb`](https://github.com/inteliwear/sidepulse/commit/ffb1d3c2f3eed3b7e80e32d7876a7e1d67bd5dfb),
 checked on 2026-10-23. Upstream is MIT licensed. See [NOTICE.md](NOTICE.md) and
 the retained [upstream license](third-party/inteliwear-sidepulse/LICENSE).
-No upstream application code or animation assets have been copied into this initial setup.
+Status LED profiles and protocol behavior are adapted from this baseline; see the provenance notice.
 
 ## Development
 
-Application implementation has not started. Review the concept and compatibility
-inventory before creating the solution. Future commands shown in the wiki are
-proposals, not currently executable instructions.
+```shell
+dotnet build -c Release
+dotnet test -c Release
+dotnet run --project src/SidePulse.Cli -- dashboard
+```
 
-The initial repository contains documentation checks, conditional .NET CI,
-optional wiki publication, Dependabot configuration, issue templates and a
-backlog of [11 planning issues](https://github.com/Anheledir/SidePulse.NET/issues).
-It does not claim a passing application build or test suite.
 
-Run the current checks with Python 3:
+The solution contains a portable core, a Spectre.Console CLI and behavioral tests.
+Implemented commands: `devices`, `state`, `write`, `dashboard`, `host` and
+`hook-config`. Use `--help` for details and `--dry-run` before sending a program.
+The command name `sidepulse-net` coexists with the existing Python port.
+
+QR pairing, protected token storage, a persistent service, full DSL validation,
+other upstream integrations and a signed installer remain planned. The wiki's
+concept pages describe the intended complete product; the getting-started page
+records what is implemented now.
+
+CI builds and tests Windows, Linux and macOS; Windows CI produces a self-contained
+preview artifact. Wiki publishing uses the built-in Actions token. A weekly
+upstream check opens or updates a review issue when the original repository
+changes. See [automation setup](docs/wiki/Project-Setup.md).
+
+Documentation checks:
 
 ```shell
 python scripts/check_docs.py
+python -m unittest discover -s scripts/tests -v
 ```
 
 Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). License: [MIT](LICENSE).

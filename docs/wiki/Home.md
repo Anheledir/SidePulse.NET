@@ -1,3 +1,5 @@
+> Implementation preview: [[Getting-Started]] lists working commands and current limitations. Other pages describe the complete planned product.
+
 # SidePulse.NET
 
 **An unofficial .NET companion for SidePulse.**

@@ -19,3 +19,17 @@ Peter Kuhar or InteliWEAR. No original branding artwork is included.
 Spectre.Console and Spectre.Console.Cli are planned dependencies. Their licenses
 must be recorded with other distributed third-party components when dependencies
 are introduced. No Spectre package is included in this planning commit.
+
+## First implementation preview
+
+`src/SidePulse.Core/LedProgram.cs` adapts status animation profiles from the Python
+Windows companion and the upstream LEDS.LED protocol. `DeviceTransport.cs` follows
+the upstream virtual-file write contract and `PhoneBridge.cs` follows the APNS
+bridge payload/channel contract. Reference: upstream revision above, files
+`LEDS_FORMAT.md`, `src/sidepulse/device_writer.py` and `src/sidepulse/links.py`.
+The retained upstream MIT notice applies to these adapted portions.
+
+Spectre.Console, Spectre.Console.Cli and Spectre.Console.Ansi 0.57.2 are MIT
+licensed dependencies, copyright Patrik Svensson, Phil Scott, Nils Andresen, Cédric Luthi and contributors.
+Their repository license is retained in `third-party/spectre.console/LICENSE.md` and included in CI distribution artifacts.
+Test packages are development dependencies and are not part of the application.

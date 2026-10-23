@@ -64,3 +64,26 @@ jobs:
           SOLUTION: ${{ needs.detect.outputs.solution }}
         shell: pwsh
         run: dotnet test $env:SOLUTION --configuration Release --no-build
+      - name: Exercise CLI and local host with simulated hardware
+        shell: pwsh
+        run: |
+          $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
+          python scripts/cli_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+      - name: Publish self-contained Windows preview
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet publish src/SidePulse.Cli -c Release -r win-x64 --self-contained true -o artifacts/win-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item LICENSE,NOTICE.md artifacts/win-x64
+          Copy-Item -Recurse third-party artifacts/win-x64
+          Copy-Item docs/wiki/Getting-Started.md artifacts/win-x64
+          python scripts/cli_smoke.py artifacts/win-x64/sidepulse-net.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload Windows preview
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sidepulse-net-win-x64-preview
+          path: artifacts/win-x64/
+          retention-days: 14
