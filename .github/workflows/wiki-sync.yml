@@ -14,11 +14,12 @@ concurrency:
 jobs:
   publish:
     if: >-
-      vars.WIKI_SYNC_ENABLED == 'true' &&
       github.ref_name == github.event.repository.default_branch
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     env:
-      WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+      WIKI_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -29,7 +30,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           if [ -z "$WIKI_TOKEN" ]; then
-            echo '::error::Add WIKI_TOKEN and initialize the repository wiki before enabling sync.'
+            echo '::error::The Actions token is unavailable.'
             exit 1
           fi
           auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$WIKI_TOKEN" | base64 -w0)"
