@@ -2,17 +2,22 @@
 
 Reference: inteliwear/sidepulse at
 [ffb1d3c2f3eed3b7e80e32d7876a7e1d67bd5dfb](https://github.com/inteliwear/sidepulse/commit/ffb1d3c2f3eed3b7e80e32d7876a7e1d67bd5dfb),
-checked 2026-10-23. Every .NET row below is **planned**, not implemented.
+checked 2026-10-23. The inventory below records the full planned scope. The preview already implements
+firmware size limits, writable USB files, iPhone pairing/silent delivery, status
+profiles, Copilot hooks, in-memory session aggregation and native credential
+storage. Full LED grammar, visible notifications, broadcast and remaining
+integrations remain planned. See [[Getting-Started]] and [[Platforms]] for
+implemented commands and test boundaries.
 
 | Area | .NET plan | Verification required |
 |---|---|---|
 | LED text language and limits | M1 | Port upstream vectors, escapes, 512-byte/20-line boundaries |
-| Writable USB volumes and discovery | M1 Windows | Dot hardware, volume labels, locked/removed media |
+| Writable USB volumes and discovery | Preview, all three OSes | Dot hardware, volume labels, locked/removed media |
 | iPhone QR/token pairing and linked targets | M1 | Original app, production/development tokens, persistence |
 | LED bridge delivery and visible notifications | M1 | Silent versus visible delivery, timeouts and failure semantics |
 | Destination selection, stdin and broadcast | M1 | Compatible ambiguity checks and explicit broadcast |
 | Built-in animations and LED counts | M1 | Source attribution, Dot/Pro geometry and brightness |
-| Copilot CLI hooks | M1 extension | Event payload fixtures and real Windows CLI |
+| Copilot CLI hooks | Preview, Bash and PowerShell | Event fixtures and real CLI on each OS |
 | Codex, Claude, Cursor, Grok, Junie | M2 parity | Separate hook schemas, installation and permissions per provider |
 | Session collection, history and aggregation | M1/M2 | Concurrent sessions, stale events and restart |
 | Optional transcript recovery | M2 investigation | Privacy, format drift and opt-in behavior |

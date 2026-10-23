@@ -2,7 +2,7 @@
 
 The first implementation is an alpha preview. USB discovery/writes, status profiles,
 raw programs, silent iPhone bridge delivery with an existing APNS token, session
-aggregation, QR pairing, Windows-protected phone links, diagnostics and a foreground
+aggregation, QR pairing, native protected phone links, diagnostics and a foreground
 Copilot CLI host are implemented. Background-service installation, full LED grammar validation,
 animation rendering, migration and other agent integrations remain planned.
 
@@ -23,9 +23,13 @@ Publish a Windows application without a Python or .NET runtime requirement:
 dotnet publish src/SidePulse.Cli -c Release -r win-x64 --self-contained true -o artifacts/win-x64
 ```
 
-Run `artifacts/win-x64/sidepulse-net.exe`. The CI Windows job also publishes a
-self-contained folder as an Actions artifact. This is a preview build, not a signed
-installer or stable release.
+Run `artifacts/win-x64/sidepulse-net.exe`. For macOS or Linux, replace `win-x64`
+with the desired runtime identifier and run `./sidepulse-net`. CI publishes
+archives for `win-x64`, `win-arm64`, `osx-x64`, `osx-arm64`, `linux-x64` and
+`linux-arm64`. Windows archives use ZIP; Unix archives use tar.gz to retain
+executable permissions. Extract the inner archive after downloading the Actions
+artifact. See [[Platforms]] for prerequisites and validation limits.
+These are unsigned preview builds, not installers or stable releases.
 
 ## USB device
 
@@ -41,7 +45,7 @@ Only one writer should control a device. Physical device behavior still needs
 Windows hardware verification. Validation checks the 512-byte/20-line envelope;
 the firmware remains responsible for LED syntax validation.
 
-## Pair an iPhone on Windows
+## Pair an iPhone
 
 ```powershell
 sidepulse-net link pair iphone
@@ -57,13 +61,25 @@ registration events. `--timeout 60` shortens the wait; `--no-qr` shows only the 
 Treat the live pairing URI as temporary pairing access; keep it out of shared logs.
 Actual QR scanning with the TestFlight app still requires device verification.
 
-The entire link document, including names and tokens, is encrypted with Windows
-DPAPI for the current user. It is stored in `%LOCALAPPDATA%\SidePulse.NET\links.dpapi`.
-There is no plaintext fallback. The store uses exclusive locking and atomic encrypted
-file replacement. It preserves an unreadable store rather than overwriting it.
-`SIDEPULSE_NET_HOME` can select another absolute directory, for isolated configurations
-or testing; this does not make DPAPI credentials portable to another Windows user.
+The entire link document, including names and tokens, is protected by the native
+credential system. Windows keeps the existing DPAPI format at
+`%LOCALAPPDATA%\SidePulse.NET\links.dpapi`. macOS and Linux encrypt a
+`links.encrypted` file using AES-256-GCM, with a random key held in Keychain or
+Secret Service respectively. The platform's local-application-data directory is
+used unless `SIDEPULSE_NET_HOME` selects another absolute directory.
+
+There is no plaintext fallback. The store uses exclusive locking and atomic
+encrypted replacement, with owner-only permissions for new Unix files. Missing
+keys and unreadable stores are preserved, not reset. Vault keys are scoped to the
+absolute store path; moving a Unix store requires pairing again or restoring its
+original location. Copying the encrypted file alone is not a credential migration.
 The app does not read or modify the Python port's configuration.
+
+macOS needs an unlocked Keychain and access for the executable. Linux needs
+`secret-tool`, an unlocked Secret Service keyring and a working D-Bus session.
+On Debian/Ubuntu, install `libsecret-tools`; desktop sessions commonly provide the
+keyring service. Headless Linux needs its own unlocked Secret Service session, or
+can use environment-token delivery without saved links. See [[Platforms]].
 
 The first linked phone becomes the default. Selection is explicit via `--phone`;
 commands without a phone option continue to discover USB devices.
@@ -88,7 +104,7 @@ presence; it sends no device writes or network requests.
 
 If you already have an iPhone token, set `SIDEPULSE_TOKEN` in the current process
 environment. Keep the value out of command history, source control and screenshots.
-Save it securely on Windows, or use it directly without persistence:
+Save it securely using the native credential vault, or use it directly without persistence:
 
 ```powershell
 sidepulse-net link import iphone --token-env SIDEPULSE_TOKEN
@@ -96,8 +112,9 @@ sidepulse-net state working --token-env SIDEPULSE_TOKEN
 sidepulse-net host --token-env SIDEPULSE_TOKEN
 ```
 
-Saved phone links and pairing currently require Windows. Linux/macOS support
-environment-token delivery without persistent storage. `--device`, `--phone` and
+Saved links and pairing are available on Windows, macOS and Linux when the native
+credential backend is available. Environment-token delivery needs no persistent
+credential backend. `--device`, `--phone` and
 `--token-env` are mutually exclusive. A dry run previews the program without
 reading credentials or validating that a saved phone exists.
 
@@ -106,7 +123,7 @@ success is bridge acceptance, not proof of delivery to the hardware. Android and
 custom bridge servers are not implemented yet. Pairing and delivery follow the
 upstream protocol at the revision in `upstream.json`.
 
-## Copilot CLI on Windows
+## Copilot CLI
 
 Start the host in a terminal, choosing either USB or the phone environment token:
 
@@ -121,6 +138,16 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\.copilot\hooks" | Out-Null
 sidepulse-net hook-config --exe C:\Tools\SidePulse.NET\sidepulse-net.exe --output "$env:USERPROFILE\.copilot\hooks\sidepulse-net.json"
 ```
 
+On macOS/Linux, use:
+
+```bash
+mkdir -p ~/.copilot/hooks
+sidepulse-net hook-config --exe /absolute/path/to/sidepulse-net --output ~/.copilot/hooks/sidepulse-net.json
+sidepulse-net host --phone default
+```
+
+Generated files include both Bash and PowerShell wrappers. Bash inherits JSON
+stdin and always returns zero, including when the executable is unavailable.
 If `COPILOT_HOME` is set, use its `hooks` directory instead. Existing files are never
 overwritten. Restart Copilot CLI after installation. PowerShell 7 is required for
 Copilot's Windows shell hooks. Remove this file and restart Copilot to uninstall.

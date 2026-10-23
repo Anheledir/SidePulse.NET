@@ -13,3 +13,5 @@
 - [[Upstream-and-Licensing]]
 
 - [[Getting started|Getting-Started]]
+
+- [[Platforms]]

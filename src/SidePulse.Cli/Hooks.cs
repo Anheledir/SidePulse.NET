@@ -13,8 +13,46 @@ namespace SidePulse.Cli;
 public static class LocalPipe
 {
     // Per-user namespace plus OS-enforced current-user access on server and client.
-    public static string Name => "sidepulse-net-" + Convert.ToHexString(SHA256.HashData(
+    private static string UserKey => Convert.ToHexString(SHA256.HashData(
         Encoding.UTF8.GetBytes(Environment.UserDomainName + "\\" + Environment.UserName)))[..20];
+    // Use a short private path to stay below Unix-domain socket limits on macOS.
+    private static string UnixDirectory => Path.Combine("/tmp", "sidepulse-net-" + UserKey);
+    public static string Name => OperatingSystem.IsWindows() ? "sidepulse-net-" + UserKey : Path.Combine(UnixDirectory, "events");
+    public static IDisposable AcquireHostLease()
+    {
+        if (OperatingSystem.IsWindows()) return new Lease(null, null);
+        Directory.CreateDirectory(UnixDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if ((File.GetAttributes(UnixDirectory) & FileAttributes.ReparsePoint) != 0
+            || (File.GetUnixFileMode(UnixDirectory) & (UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute
+                | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute)) != 0)
+            throw new IOException("The local IPC directory must be a private, non-symlink directory for the current user.");
+        FileStream gate;
+        try
+        {
+            gate = new FileStream(Path.Combine(UnixDirectory, "host.lock"), new FileStreamOptions
+            {
+                Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.None,
+                UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite
+            });
+        }
+        catch (IOException) { throw new IOException("A SidePulse.NET host is already running for this user."); }
+        try
+        {
+            // A held lease proves no other cooperating host can own this endpoint.
+            // Remove the socket left by a killed host; never unlink an active host's socket.
+            File.Delete(Name);
+            return new Lease(gate, Name);
+        }
+        catch { gate.Dispose(); throw; }
+    }
+    private sealed class Lease(FileStream? gate, string? path) : IDisposable
+    {
+        public void Dispose()
+        {
+            try { if (path is not null) File.Delete(path); }
+            finally { gate?.Dispose(); }
+        }
+    }
     public const int MaximumMessageBytes = 16384;
 }
 
@@ -92,6 +130,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
         try
         {
             // FirstPipeInstance prevents competing hosts from accepting alternate events.
+            using var lease = LocalPipe.AcquireHostLease();
             using var pipe = new NamedPipeServerStream(LocalPipe.Name, PipeDirection.In, 1,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly | PipeOptions.FirstPipeInstance);
             while (!shutdown.IsCancellationRequested)

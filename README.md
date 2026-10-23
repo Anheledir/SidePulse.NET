@@ -6,7 +6,7 @@ An unofficial .NET companion for SidePulse, with a Spectre.Console terminal inte
 
 Start with [Getting started](docs/wiki/Getting-Started.md) for build, USB, phone delivery and Copilot CLI instructions.
 
-SidePulse.NET will bring the SidePulse workflow to a native Windows application:
+SidePulse.NET brings the SidePulse workflow to Windows, macOS and Linux:
 pair a phone or connect a USB device, enable an agent integration, and see when
 an agent is working, waiting for input or finished.
 
@@ -17,11 +17,12 @@ an agent is working, waiting for input or finished.
 - Native Copilot CLI hooks, followed by the other upstream integrations.
 - USB LED programs, iPhone linking and bridge delivery, animation previews and profiles.
 - Reliable session aggregation, device aliases, diagnostics and explicit configuration migration.
-- A self-contained Windows distribution without a Python dependency.
+- Self-contained Windows, macOS and Linux distributions without a Python dependency.
 
 The proposed baseline is **C# / .NET 10 LTS**, **Spectre.Console** and
-**Spectre.Console.Cli**. Windows is the first delivery target. Platform-specific
-features and later Linux/macOS support are tracked individually.
+**Spectre.Console.Cli**. Windows, macOS and Linux are supported by the preview;
+see the [platform matrix](docs/wiki/Platforms.md) for native credential requirements
+and architecture-specific validation.
 
 ## Documentation
 
@@ -63,14 +64,15 @@ Implemented commands: `devices`, `state`, `write`, `dashboard`, `host`,
 `hook-config`, `doctor` and `link pair/list/import/default/rename/remove`. Use `--help` for details and `--dry-run` before sending a program.
 The command name `sidepulse-net` coexists with the existing Python port.
 
-QR pairing and protected token storage are available on Windows. A persistent
+QR pairing and protected token storage use DPAPI on Windows, Keychain on macOS
+and Secret Service on Linux. A persistent
 service, full DSL validation, other upstream integrations and a signed installer
 remain planned. The wiki's
 concept pages describe the intended complete product; the getting-started page
 records what is implemented now.
 
-CI builds and tests Windows, Linux and macOS; Windows CI produces a self-contained
-preview artifact. Wiki publishing uses the built-in Actions token. A weekly
+CI builds and tests Windows, Linux and macOS; CI publishes self-contained x64 and ARM64
+preview archives for all three platforms. Wiki publishing uses the built-in Actions token. A weekly
 upstream check opens or updates a review issue when the original repository
 changes. See [automation setup](docs/wiki/Project-Setup.md).
 

@@ -15,7 +15,7 @@ A background host coordinates sessions and outputs.
 
 ## First milestone
 
-Windows-native, self-contained distribution; direct writable USB devices; iPhone
+Self-contained Windows, macOS and Linux distributions; direct writable USB devices; iPhone
 pairing and bridge delivery; core LED language; manual state commands; Copilot CLI
 integration; a device/session dashboard; and diagnostics.
 

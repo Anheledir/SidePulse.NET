@@ -73,6 +73,9 @@ def main():
                     time.sleep(0.1)
                 else:
                     raise AssertionError('Host did not deliver the working state')
+                competing = subprocess.run([exe, 'host', '--device', directory, '--plain'],
+                                           text=True, capture_output=True, timeout=10, env=child_env)
+                assert competing.returncode != 0, 'A second host must not take ownership'
                 run('hook', 'agentStop', input=json.dumps({'sessionId': 'smoke', 'timestamp': 100, 'stopReason': 'end_turn'}))
                 for _ in range(30):
                     if '#00ff66' in target.read_text():
@@ -83,6 +86,20 @@ def main():
             finally:
                 host.terminate()
                 host.wait(timeout=10)
+            # A forcibly terminated host must be restartable without manual socket cleanup.
+            restarted = subprocess.Popen([exe, 'host', '--device', directory, '--plain'], stdout=log, stderr=log)
+            try:
+                for attempt in range(30):
+                    assert restarted.poll() is None, 'Restarted host exited: ' + (Path(directory) / 'host.log').read_text()
+                    run('hook', 'userPromptSubmitted', input=json.dumps({'sessionId': 'restart', 'timestamp': 200 + attempt}))
+                    if '#00e5ff' in target.read_text():
+                        break
+                    time.sleep(0.1)
+                else:
+                    raise AssertionError('Restarted host did not accept hook input')
+            finally:
+                restarted.terminate()
+                restarted.wait(timeout=10)
     print('CLI, hook isolation, configuration and host/device smoke checks passed.')
 
 

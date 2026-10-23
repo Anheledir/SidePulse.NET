@@ -46,3 +46,9 @@ Its original license is retained in `third-party/qrcoder/LICENSE.txt`.
 System.Security.Cryptography.ProtectedData 10.0.13 and the Microsoft libraries
 resolved with QRCoder are MIT licensed .NET components. Windows preview artifacts
 include the .NET license and third-party notices in `third-party/dotnet`.
+
+## Platform adapters
+
+`PlatformSecrets.cs` and `MacKeychainVault.cs` are new implementations using native
+OS credential APIs/helpers and .NET AES-GCM. No third-party source was copied for
+these adapters. The credential APIs do not require a cloud account or token.
