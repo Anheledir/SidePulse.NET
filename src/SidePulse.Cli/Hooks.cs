@@ -167,7 +167,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                             await pipe.FlushAsync(deadline.Token);
                             // Windows disconnect discards unread reply bytes. Wait for a bounded receipt
                             // acknowledgement before disconnecting; no unbounded pipe drain is needed.
-                            await pipe.ReadAsync(new byte[1], deadline.Token);
+                            await pipe.ReadExactlyAsync(new byte[1], deadline.Token);
                             if (action == "stop") shutdown.Cancel();
                         }
                         continue;
