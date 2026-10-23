@@ -49,6 +49,19 @@ jobs:
       - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           category: '/language:${{ matrix.language }}'
+          output: codeql-results
+      - name: Summarize scan findings
+        if: always()
+        run: |
+          python3 - <<'PYCODE'
+          import json
+          from pathlib import Path
+          for report in sorted(Path('codeql-results').glob('*.sarif')):
+              for run in json.loads(report.read_text()).get('runs', []):
+                  for result in run.get('results', []):
+                      locations = [item.get('physicalLocation', {}) for item in result.get('locations', [])]
+                      print(json.dumps({'rule': result.get('ruleId'), 'message': result.get('message'), 'locations': locations}))
+          PYCODE
   dependencies:
     name: Dependency review
     if: github.event_name == 'pull_request'

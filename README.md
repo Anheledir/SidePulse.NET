@@ -10,19 +10,24 @@ SidePulse.NET brings the SidePulse workflow to Windows, macOS and Linux:
 pair a phone or connect a USB device, enable an agent integration, and see when
 an agent is working, waiting for input or finished.
 
-## Planned experience
+## Preview functionality
 
-- A live terminal dashboard for devices, agent sessions and recent events.
-- Fast, silent commands for hooks and scripts, alongside interactive setup.
+- Cursor menus, script-command review/copy/export, plain/quiet/JSON output.
 - Copilot CLI, Codex, Claude Code and Kiro CLI V3 hooks with shared status aggregation.
-- USB LED programs, iPhone linking and bridge delivery, animation previews and profiles.
-- Reliable session aggregation, device aliases, diagnostics and explicit configuration migration.
-- Self-contained Windows, macOS and Linux distributions without a Python dependency.
+- Writable USB/SD LED output, iPhone linking and native protected credentials.
+- Dot/Pro animation simulation, custom editor, upstream patterns and state profiles.
+- Host lifecycle, bounded logs, diagnostics and phone aliases.
+- Six self-contained platform/architecture packages and verified-update commands.
 
-The proposed baseline is **C# / .NET 10 LTS**, **Spectre.Console** and
+The baseline is **C# / .NET 10 LTS**, **Spectre.Console** and
 **Spectre.Console.Cli**. Windows, macOS and Linux are supported by the preview;
 see the [platform matrix](docs/wiki/Platforms.md) for native credential requirements
-and architecture-specific validation.
+and architecture-specific validation. No release has been published yet.
+
+Hardware/firmware, real provider sessions and the public release/update flow still
+need acceptance evidence. A live dashboard, device aliases, explicit Python
+migration, remote relay and read-only transports remain planned. See the
+[architecture and QA review](docs/reviews/pr-12.md) and [open issues](https://github.com/Anheledir/SidePulse.NET/issues).
 
 ## Documentation
 
@@ -36,10 +41,11 @@ The editable source of truth lives in [docs/wiki](docs/wiki/Home.md).
 - [Copilot integration](docs/wiki/Copilot-CLI.md)
 - [Roadmap and acceptance criteria](docs/wiki/Roadmap.md)
 - [Repository and automation setup](docs/wiki/Project-Setup.md)
+- [Security policy](SECURITY.md) and [observed/desired repository settings](docs/repository-settings.md)
 
 ## Original project and attribution
 
-This project is inspired by and plans to port functionality from
+This project ports selected functionality from
 [**inteliwear/sidepulse**](https://github.com/inteliwear/sidepulse), created by
 **Peter Kuhar / InteliWEAR**, and the [SidePulse hardware](https://sidepulse.io/).
 It is independently maintained and is not an official InteliWEAR product.
@@ -60,9 +66,9 @@ dotnet run --project src/SidePulse.Cli -- dashboard
 
 
 The solution contains a portable core, a Spectre.Console CLI and behavioral tests.
-Implemented commands: `devices`, `state`, `write`, `dashboard`, `host`,
-`hook-config`, `doctor`, `agents list/install/status/uninstall`, host lifecycle
-commands and `link pair/list/import/default/rename/remove`. Use `--help` for details and `--dry-run` before sending a program.
+Command groups include `devices`, `state`, `write`, `dashboard`, `host`, `agents`,
+`link`, `animations`, `profiles`, `about`, `docs` and `update`. Use `--help` for
+subcommands and `--dry-run` where supported before changing files or sending a program.
 The command name `sidepulse-net` coexists with the existing Python port.
 
 QR pairing and protected token storage use DPAPI on Windows, Keychain on macOS

@@ -98,7 +98,7 @@ public sealed class UpdateTests
     public async Task ReleaseBodyReadHonorsCancellationAfterHeaders()
     {
         using var client = new HttpClient(new Handler(_ => new(HttpStatusCode.OK) { Content = new StreamContent(new WaitingStream()) })) { Timeout = TimeSpan.FromMilliseconds(100) };
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new GitHubReleases(client).Latest(false));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new GitHubReleases(client).Latest(false).WaitAsync(TimeSpan.FromSeconds(3)));
     }
     private sealed class WaitingStream : MemoryStream
     {
