@@ -92,6 +92,9 @@ jobs:
         run: |
           $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
           python scripts/cli_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/agent_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish and exercise self-contained previews
         shell: pwsh
         run: |
@@ -110,6 +113,8 @@ jobs:
             if ($rid -eq $native) {
               $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
               python scripts/cli_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              python scripts/agent_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             }
             if ($IsWindows) {

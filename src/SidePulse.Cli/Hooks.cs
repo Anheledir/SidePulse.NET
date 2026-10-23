@@ -60,6 +60,8 @@ public sealed class HookSettings : CommandSettings
 {
     [CommandArgument(0, "<EVENT>")]
     public string Event { get; init; } = "";
+    [CommandOption("--source <AGENT>")]
+    public AgentProvider Source { get; init; } = AgentProvider.Copilot;
 }
 public sealed class HookCommand : AsyncCommand<HookSettings>
 {
@@ -78,14 +80,14 @@ public sealed class HookCommand : AsyncCommand<HookSettings>
                 length += read;
             }
             if (length > LocalPipe.MaximumMessageBytes) return 0;
-            var item = CopilotEvents.Parse(settings.Event, new string(buffer, 0, length));
+            var item = AgentEvents.Parse(settings.Source, settings.Event, new string(buffer, 0, length));
             if (item is null) return 0;
             var bytes = JsonSerializer.SerializeToUtf8Bytes(item);
             if (bytes.Length > LocalPipe.MaximumMessageBytes) return 0;
             using var pipe = new NamedPipeClientStream(".", LocalPipe.Name, PipeDirection.Out,
                 PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             await pipe.ConnectAsync(timeout.Token);
-            await pipe.WriteAsync(bytes, timeout.Token);
+            await pipe.WriteAsync(bytes.Concat(new byte[] { 10 }).ToArray(), timeout.Token);
             await pipe.FlushAsync(timeout.Token);
         }
         catch (Exception) { /* A missing host or invalid hook input must not break Copilot. */ }
@@ -94,6 +96,10 @@ public sealed class HookCommand : AsyncCommand<HookSettings>
 }
 public sealed class HostSettings : TargetSettings
 {
+    [CommandOption("--log-file <PATH>")]
+    public string? LogFile { get; init; }
+    [CommandOption("--background")]
+    public bool Background { get; init; }
     [CommandOption("--plain")]
     [Description("Write plain state changes instead of terminal panels.")]
     public bool Plain { get; init; }
@@ -102,6 +108,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, HostSettings settings, CancellationToken cancellationToken)
     {
+        if (settings.Background) HostLogs.Detach();
         using var shutdown = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         ConsoleCancelEventHandler cancel = (_, args) => { args.Cancel = true; shutdown.Cancel(); };
         Console.CancelKeyPress += cancel;
@@ -131,7 +138,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
         {
             // FirstPipeInstance prevents competing hosts from accepting alternate events.
             using var lease = LocalPipe.AcquireHostLease();
-            using var pipe = new NamedPipeServerStream(LocalPipe.Name, PipeDirection.In, 1,
+            using var pipe = new NamedPipeServerStream(LocalPipe.Name, PipeDirection.InOut, 1,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly | PipeOptions.FirstPipeInstance);
             while (!shutdown.IsCancellationRequested)
             {
@@ -141,14 +148,27 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                     using var deadline = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token);
                     deadline.CancelAfter(TimeSpan.FromSeconds(1));
                     using var message = new MemoryStream();
-                    var buffer = new byte[4096];
+                    var buffer = new byte[1];
                     while (message.Length <= LocalPipe.MaximumMessageBytes)
                     {
                         var count = await pipe.ReadAsync(buffer, deadline.Token);
-                        if (count == 0) break;
+                        if (count == 0 || buffer[0] == 10) break;
                         message.Write(buffer, 0, count);
                     }
                     if (message.Length > LocalPipe.MaximumMessageBytes) continue;
+                    using var request = JsonDocument.Parse(message.ToArray());
+                    if (request.RootElement.TryGetProperty("Command", out var command))
+                    {
+                        var action = command.GetString();
+                        if (action is "status" or "stop")
+                        {
+                            var response = JsonSerializer.SerializeToUtf8Bytes(new HostSnapshot(true, Environment.ProcessId, sessions.State, sessions.Snapshot), Output.Json);
+                            await pipe.WriteAsync(response, deadline.Token);
+                            await pipe.FlushAsync(deadline.Token);
+                            if (action == "stop") shutdown.Cancel();
+                        }
+                        continue;
+                    }
                     var item = JsonSerializer.Deserialize<SessionEvent>(message.ToArray());
                     if (item is null || !Enum.IsDefined(item.State) || !sessions.Apply(item)) continue;
                     var state = sessions.State;
@@ -156,9 +176,9 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                     else if (settings.Plain || Console.IsOutputRedirected) Console.WriteLine($"{DateTimeOffset.Now:HH:mm:ss} {state} ({sessions.Snapshot.Count} sessions)");
                     else
                     {
-                        var table = new Table().Border(TableBorder.Rounded).AddColumn("Session").AddColumn("Status");
+                        var table = new Table().Border(TableBorder.Rounded).AddColumn("Agent").AddColumn("Session").AddColumn("Status");
                         foreach (var session in sessions.Snapshot)
-                            table.AddRow(Markup.Escape(session.Id), $"[{Output.Color(session.State)}]{session.State}[/]");
+                            table.AddRow(session.Provider.ToString(), Markup.Escape(session.Id), $"[{Output.Color(session.State)}]{session.State}[/]");
                         AnsiConsole.Write(table);
                     }
                     // Delivery runs separately so bridge latency cannot block pipe acceptance.
@@ -170,7 +190,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                         queued = state;
                     }
                 }
-                catch (Exception ex) when (ex is JsonException or IOException or OperationCanceledException) { }
+                catch (Exception ex) when (ex is JsonException or InvalidOperationException or IOException or OperationCanceledException) { }
                 finally { pipe.Disconnect(); }
             }
         }
@@ -198,21 +218,8 @@ public sealed class HookConfigCommand : Command<HookConfigSettings>
 {
     public override int Execute(CommandContext context, HookConfigSettings settings, CancellationToken cancellationToken)
     {
-        var exe = Path.GetFullPath(settings.Executable);
-        if (!File.Exists(exe) || !Path.GetFileNameWithoutExtension(exe).Equals("sidepulse-net", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Use --exe with the path of a published sidepulse-net executable.");
-        var hooks = new Dictionary<string, object>();
-        foreach (var name in new[] { "sessionStart", "userPromptSubmitted", "preToolUse", "postToolUse", "agentStop", "errorOccurred", "postToolUseFailure", "sessionEnd", "notification" })
-        {
-            var command = "$ErrorActionPreference = 'SilentlyContinue'; try { $input | & '" + exe.Replace("'", "''")
-                + "' hook " + name + " | Out-Null } catch {}; exit 0";
-            var quoted = "'" + exe.Replace("'", "'\"'\"'") + "'";
-            var bash = quoted + " hook " + name + " >/dev/null 2>&1; exit 0";
-            var entry = new Dictionary<string, object> { ["type"] = "command", ["powershell"] = command, ["bash"] = bash, ["timeoutSec"] = 2 };
-            if (name == "notification") entry["matcher"] = "permission_prompt|elicitation_dialog";
-            hooks[name] = new[] { entry };
-        }
-        var json = JsonSerializer.Serialize(new { version = 1, hooks }, Output.Json) + Environment.NewLine;
+        var exe = HookConfiguration.Executable(settings.Executable);
+        var json = HookConfiguration.Generate(AgentProvider.Copilot, exe, OperatingSystem.IsWindows()).ToJsonString(Output.Json) + Environment.NewLine;
         if (settings.OutputPath is { } path)
         {
             using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
