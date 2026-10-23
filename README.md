@@ -126,3 +126,21 @@ See [animations](docs/wiki/Animations.md) and
 [scripting and menus](docs/wiki/Scripting-and-Menus.md). `docs --offline` reads
 bundled documentation; `about` provides manufacturer/upstream/project links and
 licensed dependency credits. Browser opening requires `--open`.
+
+## Verified updates
+
+```shell
+sidepulse-net update check
+sidepulse-net update install --prerelease --dry-run
+sidepulse-net host stop
+sidepulse-net update install --prerelease
+sidepulse-net update status
+```
+
+The updater selects a published GitHub release for the current OS/architecture,
+verifies SHA-256, stages the complete distribution and replaces it after the CLI
+exits. A backup and startup probe support rollback. Use self-contained packages
+with an installation manifest; older previews need one manual upgrade. Stop the
+host first and confirm `installed` before restarting it. See
+[updating and recovery](docs/wiki/Updating.md). Adding the release workflow does not
+publish a release; a matching version tag explicitly triggers publishing.

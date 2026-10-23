@@ -183,3 +183,7 @@ until this preview is validated on your setup.
 
 See [[Animations]] for Dot/Pro previews, custom editing and agent profiles, and
 [[Scripting-and-Menus]] for interactive command building and quiet/JSON output.
+
+## Updates
+
+See [[Updating]] for GitHub release checks, verified self-update and recovery.

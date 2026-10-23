@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
@@ -115,11 +116,16 @@ jobs:
             New-Item -ItemType Directory -Force "$destination/third-party/dotnet" | Out-Null
             Copy-Item "$env:DOTNET_ROOT/LICENSE.txt","$env:DOTNET_ROOT/ThirdPartyNotices.txt" "$destination/third-party/dotnet"
             Copy-Item docs/wiki/Getting-Started.md $destination
+            $version = ([xml](Get-Content src/SidePulse.Cli/SidePulse.Cli.csproj -Raw)).Project.PropertyGroup.Version
+            python scripts/package_manifest.py $destination $rid $version
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             if ($rid -eq $native) {
               $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
               python scripts/cli_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               python scripts/animation_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              python scripts/update_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               python scripts/agent_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

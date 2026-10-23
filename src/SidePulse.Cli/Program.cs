@@ -7,6 +7,8 @@ try { args = Interactive.Resolve(args) ?? []; }
 catch (Exception ex) { return TerminalMode.Error(ex); }
 if (args.Length == 0) return 0;
 
+if (args.Length == 1 && args[0] == "update") args = ["update", "check"];
+
 // Preserve the original foreground shorthand while adding lifecycle subcommands.
 if (args.Length >= 1 && args[0] == "host" && (args.Length == 1 || args[1].StartsWith('-') && args[1] is not "--help" and not "-h"))
     args = new[] { "host", "run" }.Concat(args.Skip(1)).ToArray();
@@ -16,7 +18,7 @@ app.Configure(config =>
 {
     config.ConfigureConsole(AnsiConsole.Console);
     config.SetApplicationName("sidepulse-net");
-    config.SetApplicationVersion("0.1.0-alpha.5");
+    config.SetApplicationVersion(ProjectInfo.Version);
     config.AddBranch("animations", animations =>
     {
         animations.SetDescription("Create, validate, preview and send Dot / Pro LED patterns.");
@@ -43,6 +45,14 @@ app.Configure(config =>
         about.AddCommand<LicensesCommand>("licenses");
     });
     config.AddCommand<DocsCommand>("docs");
+    config.AddBranch("update", update =>
+    {
+        update.SetDescription("Check GitHub releases and install verified self-contained updates.");
+        update.AddCommand<UpdateCheckCommand>("check");
+        update.AddCommand<UpdateInstallCommand>("install");
+        update.AddCommand<UpdateStatusCommand>("status");
+    });
+    config.AddCommand<ApplyUpdateCommand>("internal-update").IsHidden();
     config.AddBranch("link", links =>
     {
         links.SetDescription("Pair and manage protected iPhone links.");

@@ -21,3 +21,5 @@
 
 - [[Animations]]
 - [[Scripting and menus|Scripting-and-Menus]]
+
+- [[Updating]]

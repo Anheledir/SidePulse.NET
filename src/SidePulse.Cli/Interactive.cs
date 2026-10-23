@@ -15,16 +15,16 @@ public static class Interactive
             if (args.Length == 1 && args[0] is "about" or "animations" or "agents" or "link" or "host" or "profiles") return [args[0], "--help"];
             return args;
         }
-        if (args.Length > 1 || args.Length == 1 && args[0] is not ("about" or "animations" or "agents" or "link" or "host" or "profiles")) return args;
+        if (args.Length > 1 || args.Length == 1 && args[0] is not ("about" or "animations" or "agents" or "link" or "host" or "profiles" or "update")) return args;
         var group = args.FirstOrDefault();
         while (true)
         {
             if (group is null)
             {
-                var selected = Choose("SidePulse.NET", [new("Animations"), new("Devices", ["devices"]), new("Display state"), new("Agent hooks"), new("Background host"), new("Phone links"), new("Profiles"), new("Diagnostics", ["doctor"]), new("About")]);
+                var selected = Choose("SidePulse.NET", [new("Animations"), new("Devices", ["devices"]), new("Display state"), new("Agent hooks"), new("Background host"), new("Phone links"), new("Profiles"), new("Diagnostics", ["doctor"]), new("Updates"), new("About")]);
                 if (selected is null) return null;
                 if (selected.Arguments is { } direct) return direct;
-                group = selected.Label switch { "Animations" => "animations", "Agent hooks" => "agents", "Background host" => "host", "Phone links" => "link", "Profiles" => "profiles", "About" => "about", _ => "state" };
+                group = selected.Label switch { "Animations" => "animations", "Agent hooks" => "agents", "Background host" => "host", "Phone links" => "link", "Profiles" => "profiles", "About" => "about", "Updates" => "update", _ => "state" };
             }
             var command = Build(group);
             if (command is not null) return command;
@@ -86,6 +86,16 @@ public static class Interactive
     }
     private static string[]? Build(string group)
     {
+        if (group == "update")
+        {
+            var action = Choose("Updates", [new("Check", ["update", "check"]), new("Install"), new("Status", ["update", "status"])]);
+            if (action is null) return null;
+            if (action.Arguments is { } direct) return direct;
+            var command = new List<string> { "update", "install" };
+            if (AnsiConsole.Confirm("Include prereleases?", false)) command.Add("--prerelease");
+            if (AnsiConsole.Confirm("Preview the update only?", true)) command.Add("--dry-run");
+            return Review(command);
+        }
         if (group == "about")
         {
             var action = Choose("About SidePulse.NET", [new("Overview", ["about", "info"]), new("Manufacturer website", ["about", "website", "--open"]), new("Project on GitHub", ["about", "github", "--open"]), new("Original project", ["about", "upstream", "--open"]), new("Credits", ["about", "credits"]), new("Libraries and licenses", ["about", "licenses"]), new("Documentation", ["docs", "--open"])]);
