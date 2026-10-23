@@ -14,7 +14,7 @@ public sealed class WindowsSecretProtector : ISecretProtector
     public WindowsSecretProtector()
     {
         if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("Saved phone links currently require Windows DPAPI. Use --token-env on other platforms.");
+            throw new PlatformNotSupportedException("DPAPI is available only on Windows.");
     }
     public byte[] Protect(byte[] plaintext)
     {
@@ -39,7 +39,7 @@ public sealed class LinkStore(string path, ISecretProtector protector)
             if (string.IsNullOrWhiteSpace(home))
                 home = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SidePulse.NET");
             if (!Path.IsPathFullyQualified(home)) throw new ArgumentException("SIDEPULSE_NET_HOME must be an absolute directory path.");
-            return Path.Combine(home, "links.dpapi");
+            return Path.Combine(home, OperatingSystem.IsWindows() ? "links.dpapi" : "links.encrypted");
         }
     }
     private const int MaximumBytes = 262144;
@@ -48,9 +48,16 @@ public sealed class LinkStore(string path, ISecretProtector protector)
 
     private FileStream Lock()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-        try { return new FileStream(fullPath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+        if (OperatingSystem.IsWindows()) Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        else Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        try { return PrivateFile(fullPath + ".lock", FileMode.OpenOrCreate); }
         catch (IOException) { throw new IOException("The phone store is busy. Retry after the other command finishes."); }
+    }
+    private static FileStream PrivateFile(string path, FileMode mode, FileOptions options = FileOptions.None)
+    {
+        var settings = new FileStreamOptions { Mode = mode, Access = FileAccess.ReadWrite, Share = FileShare.None, Options = options };
+        if (!OperatingSystem.IsWindows()) settings.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        return new FileStream(path, settings);
     }
     private Document Read()
     {
@@ -93,7 +100,7 @@ public sealed class LinkStore(string path, ISecretProtector protector)
         var temporary = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            using (var file = PrivateFile(temporary, FileMode.CreateNew, FileOptions.WriteThrough))
             {
                 file.Write(encrypted);
                 file.Flush(true);

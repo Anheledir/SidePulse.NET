@@ -68,6 +68,8 @@ public sealed class PhoneTests
     {
         var protectors = new List<ISecretProtector> { new TestProtector() };
         if (OperatingSystem.IsWindows()) protectors.Add(new WindowsSecretProtector());
+        if (!OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("SIDEPULSE_NATIVE_VAULT_TESTS") == "1")
+            protectors.Add(PlatformSecrets.Create(Path.Combine(Path.GetTempPath(), "sidepulse-native-test-" + Guid.NewGuid())));
         foreach (var protector in protectors)
         {
             var directory = Path.Combine(Path.GetTempPath(), "SidePulse tests ü " + Guid.NewGuid());

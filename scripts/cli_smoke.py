@@ -28,14 +28,14 @@ def main():
         child_env['SIDEPULSE_NET_HOME'] = str(Path(directory) / 'config')
         checks = json.loads(run('doctor', '--json').stdout)
         assert all(check['Status'] != 'error' for check in checks)
-        if os.name == 'nt':
+        if os.name == 'nt' or os.environ.get('SIDEPULSE_NATIVE_VAULT_TESTS') == '1':
             token = 'a' * 64 + '_TestKey'
             child_env['SIDEPULSE_TEST_TOKEN'] = token
             run('link', 'import', 'iphone', '--token-env', 'SIDEPULSE_TEST_TOKEN')
             phones = run('link', 'list', '--json').stdout
             assert token not in phones
             assert json.loads(phones)[0]['IsDefault']
-            blob = (Path(child_env['SIDEPULSE_NET_HOME']) / 'links.dpapi').read_bytes()
+            blob = (Path(child_env['SIDEPULSE_NET_HOME']) / ('links.dpapi' if os.name == 'nt' else 'links.encrypted')).read_bytes()
             assert token.encode() not in blob
             run('link', 'rename', 'iphone', 'personal')
             run('link', 'default', 'personal')
@@ -51,6 +51,7 @@ def main():
         hooks = json.loads(config.read_text())['hooks']
         assert 'permissionRequest' not in hooks and 'subagentStop' not in hooks
         assert 'exit 0' in hooks['preToolUse'][0]['powershell']
+        assert 'exit 0' in hooks['preToolUse'][0]['bash']
         refused = subprocess.run([exe, 'hook-config', '--exe', exe, '--output', str(config)], capture_output=True)
         assert refused.returncode != 0
         with open(Path(directory) / 'host.log', 'w') as log:
@@ -59,7 +60,13 @@ def main():
                 # Repeated idempotent input accommodates host startup without a timing-only assertion.
                 for attempt in range(30):
                     assert host.poll() is None, 'Host exited: ' + (Path(directory) / 'host.log').read_text()
-                    result = run('hook', 'userPromptSubmitted', input=json.dumps({'sessionId': 'smoke', 'timestamp': attempt + 1}))
+                    payload = json.dumps({'sessionId': 'smoke', 'timestamp': attempt + 1})
+                    if os.name == 'nt':
+                        result = run('hook', 'userPromptSubmitted', input=payload)
+                    else:
+                        result = subprocess.run(['bash', '-c', hooks['userPromptSubmitted'][0]['bash']],
+                                                input=payload, text=True, capture_output=True, timeout=10, env=child_env)
+                        assert result.returncode == 0
                     assert not result.stdout and not result.stderr
                     if '#00e5ff' in target.read_text():
                         break

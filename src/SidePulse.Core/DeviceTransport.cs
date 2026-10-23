@@ -15,7 +15,12 @@ public static class DeviceTransport
             {
                 if (!drive.IsReady) continue;
                 var path = System.IO.Path.Combine(drive.RootDirectory.FullName, "LEDS.LED");
-                if (File.Exists(path)) result.Add(new Device(path, drive.VolumeLabel));
+                if (File.Exists(path))
+                {
+                    var label = drive.RootDirectory.Name;
+                    try { label = drive.VolumeLabel; } catch (IOException) { } catch (UnauthorizedAccessException) { }
+                    result.Add(new Device(path, label));
+                }
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }

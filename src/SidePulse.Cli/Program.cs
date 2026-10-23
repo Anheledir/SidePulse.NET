@@ -6,10 +6,10 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("sidepulse-net");
-    config.SetApplicationVersion("0.1.0-alpha.2");
+    config.SetApplicationVersion("0.1.0-alpha.3");
     config.AddBranch("link", links =>
     {
-        links.SetDescription("Pair and manage protected iPhone links (Windows).");
+        links.SetDescription("Pair and manage protected iPhone links.");
         links.AddCommand<PairPhoneCommand>("pair").WithDescription("Pair an iPhone by QR code.");
         links.AddCommand<LinkListCommand>("list").WithDescription("List saved phones without exposing tokens.");
         links.AddCommand<ImportPhoneCommand>("import").WithDescription("Save an existing token from an environment variable.");

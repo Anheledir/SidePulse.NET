@@ -8,7 +8,7 @@ namespace SidePulse.Cli;
 
 public static class PhoneStores
 {
-    public static LinkStore Open() => new(LinkStore.DefaultPath, new WindowsSecretProtector());
+    public static LinkStore Open() => new(LinkStore.DefaultPath, PlatformSecrets.Create(LinkStore.DefaultPath));
 }
 public class LinkListSettings : CommandSettings
 {

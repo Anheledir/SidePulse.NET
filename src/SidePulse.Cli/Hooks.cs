@@ -167,7 +167,9 @@ public sealed class HookConfigCommand : Command<HookConfigSettings>
         {
             var command = "$ErrorActionPreference = 'SilentlyContinue'; try { $input | & '" + exe.Replace("'", "''")
                 + "' hook " + name + " | Out-Null } catch {}; exit 0";
-            var entry = new Dictionary<string, object> { ["type"] = "command", ["powershell"] = command, ["timeoutSec"] = 2 };
+            var quoted = "'" + exe.Replace("'", "'\"'\"'") + "'";
+            var bash = quoted + " hook " + name + " >/dev/null 2>&1; exit 0";
+            var entry = new Dictionary<string, object> { ["type"] = "command", ["powershell"] = command, ["bash"] = bash, ["timeoutSec"] = 2 };
             if (name == "notification") entry["matcher"] = "permission_prompt|elicitation_dialog";
             hooks[name] = new[] { entry };
         }

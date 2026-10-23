@@ -24,27 +24,22 @@ public sealed class DoctorCommand : Command<DoctorSettings>
         };
         var devices = DeviceTransport.Discover();
         checks.Add(new("USB discovery", devices.Count == 0 ? "info" : "ok", $"{devices.Count} mounted device(s). No write was attempted."));
-        if (OperatingSystem.IsWindows())
+        try
         {
-            try
+            var protector = PlatformSecrets.Create(LinkStore.DefaultPath);
+            checks.Add(new("Credential protection", "ok", PlatformSecrets.Description + ". An unlocked native vault is required for saved links."));
+            if (File.Exists(LinkStore.DefaultPath))
             {
-                var protector = new WindowsSecretProtector();
-                var sample = new byte[] { 83, 80 };
-                if (!protector.Unprotect(protector.Protect(sample)).AsSpan().SequenceEqual(sample)) throw new IOException();
-                checks.Add(new("Credential protection", "ok", "Current-user DPAPI round trip succeeded."));
-                if (File.Exists(LinkStore.DefaultPath))
-                {
-                    var links = PhoneStores.Open().List();
-                    checks.Add(new("Phone store", "ok", $"{links.Count} protected phone link(s). Tokens are never shown."));
-                }
-                else checks.Add(new("Phone store", "info", "No saved phone store. Use link pair to get started."));
+                var links = PhoneStores.Open().List();
+                checks.Add(new("Phone store", "ok", $"{links.Count} protected phone link(s). Tokens are never shown."));
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
-            {
-                checks.Add(new("Phone store / DPAPI", "error", "Protected storage is unavailable or unreadable. Existing data was preserved."));
-            }
+            else checks.Add(new("Phone store", "info", "No saved phone store. Use link pair to get started."));
         }
-        else checks.Add(new("Credential protection", "info", "Saved phone links require Windows. Environment-token delivery remains available."));
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException or PlatformNotSupportedException)
+        {
+            checks.Add(new("Credential protection", File.Exists(LinkStore.DefaultPath) ? "error" : "info",
+                "Native credentials are unavailable or unreadable. Unlock Keychain on macOS; on Linux install secret-tool and unlock a Secret Service keyring. Existing data was preserved. Environment-token delivery remains available."));
+        }
         var copilotHome = Environment.GetEnvironmentVariable("COPILOT_HOME");
         var hooks = string.IsNullOrWhiteSpace(copilotHome)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot", "hooks")

@@ -51,7 +51,7 @@ public class TargetSettings : CommandSettings
     [Description("Environment variable holding an iPhone push token. Selects phone delivery.")]
     public string? TokenEnvironment { get; init; }
     [CommandOption("--phone <ALIAS>")]
-    [Description("Use a saved phone alias, or 'default'. Windows protected storage.")]
+    [Description("Use a saved phone alias, or 'default', from native protected storage.")]
     public string? Phone { get; init; }
     [CommandOption("--dry-run")]
     [Description("Preview the program without writing or sending anything.")]
