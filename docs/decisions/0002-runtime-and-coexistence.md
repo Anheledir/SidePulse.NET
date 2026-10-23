@@ -1,6 +1,6 @@
 # ADR 0002: Shared state owner and explicit migration
 
-Status: proposed, 2026-10-23.
+Status: accepted by the maintainer in the project discussion, 2026-10-23.
 
 A local background host will own event reduction, per-session state and device
 outputs. Hook adapters will enqueue small events over authenticated local IPC.

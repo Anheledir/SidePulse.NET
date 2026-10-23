@@ -36,7 +36,16 @@ public sealed class HookInstallation(string manifestDirectory)
         if (existingManifest is not null)
         {
             var status = Status(target);
-            if (status.State == "installed") return status;
+            if (status.State == "installed")
+            {
+                var originalBytes = existingManifest.BeforeHash == "absent" ? null : existingManifest.Backup is { } backupPath ? Read(backupPath) : null;
+                if (Hash(originalBytes) != existingManifest.BeforeHash) throw new IOException("The original backup is missing or modified. Review it before reinstalling.");
+                var originalSettings = originalBytes is null ? null : JsonNode.Parse(originalBytes)!.AsObject();
+                var requested = HookConfiguration.Merge(provider, originalSettings, generated);
+                if (Hash(Serialize(requested)) != existingManifest.InstalledHash)
+                    throw new IOException("The requested hooks differ from the installed hooks. Uninstall before reinstalling with a different executable or configuration; no files were changed.");
+                return status;
+            }
             throw new IOException("An existing installation changed or is pending. Review it and uninstall before reinstalling; no files were overwritten.");
         }
         var before = Read(target);
@@ -48,7 +57,7 @@ public sealed class HookInstallation(string manifestDirectory)
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException) { throw new IOException("Existing configuration must be valid JSON. No files were changed."); }
         var merged = HookConfiguration.Merge(provider, original, generated);
-        var after = System.Text.Encoding.UTF8.GetBytes(merged.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+        var after = Serialize(merged);
         if (dryRun) return new("preview", target, null);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         Directory.CreateDirectory(manifestDirectory);
@@ -72,10 +81,17 @@ public sealed class HookInstallation(string manifestDirectory)
         var target = Target(path);
         var manifest = Load(target);
         if (manifest is null) return new("not-installed", target, null);
+        if (dryRun)
+        {
+            var preview = Status(target);
+            if (preview.State == "modified") throw new IOException("Configuration was edited after installation. Review the backup and merge manually; uninstall will not overwrite those changes.");
+            return preview with { State = "preview-remove" };
+        }
         using var gate = PrivateFile(target + ".sidepulse-net.lock", FileMode.OpenOrCreate);
+        manifest = Load(target);
+        if (manifest is null) return new("not-installed", target, null);
         var status = Status(target);
         if (status.State == "modified") throw new IOException("Configuration was edited after installation. Review the backup and merge manually; uninstall will not overwrite those changes.");
-        if (dryRun) return status with { State = "preview-remove" };
         if (status.State == "installed")
         {
             if (manifest.BeforeHash == "absent") File.Delete(target);
@@ -95,6 +111,7 @@ public sealed class HookInstallation(string manifestDirectory)
         if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         return new FileStream(path, options);
     }
+    private static byte[] Serialize(JsonObject value) => System.Text.Encoding.UTF8.GetBytes(value.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
     private static void AtomicWrite(string path, byte[] bytes)
     {
         var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";

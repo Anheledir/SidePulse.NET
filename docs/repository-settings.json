@@ -1,0 +1,49 @@
+{
+  "repository": "Anheledir/SidePulse.NET",
+  "reviewedOn": "2026-10-23",
+  "implementationPullRequest": 12,
+  "observed": {
+    "visibility": "public",
+    "defaultBranch": "main",
+    "description": "Unofficial .NET companion for SidePulse with a Spectre.Console terminal UI. Concept stage.",
+    "homepage": null,
+    "topics": [],
+    "hasIssues": true,
+    "hasWiki": true,
+    "hasProjects": false,
+    "deleteBranchOnMerge": true,
+    "allowMergeCommit": false,
+    "allowSquashMerge": true,
+    "allowRebaseMerge": true,
+    "allowAutoMerge": false
+  },
+  "desired": {
+    "description": "Unofficial cross-platform SidePulse companion in C# and Spectre.Console: agent status hooks, LED patterns, iPhone pairing and verified updates.",
+    "homepage": "https://github.com/Anheledir/SidePulse.NET/wiki",
+    "topics": ["sidepulse", "dotnet", "csharp", "spectre-console", "cli", "cross-platform", "github-copilot", "codex", "claude-code", "kiro", "led"],
+    "hasProjects": true,
+    "privateVulnerabilityReporting": true,
+    "dependabotAlerts": true,
+    "dependabotSecurityUpdates": true,
+    "secretScanning": true,
+    "secretScanningPushProtection": true,
+    "actionsDefaultTokenPermissions": "read",
+    "actionsCanApprovePullRequests": false,
+    "mainRules": {
+      "requirePullRequest": true,
+      "requiredApprovals": 0,
+      "requireConversationResolution": true,
+      "requireUpToDateBranch": true,
+      "blockForcePushes": true,
+      "blockDeletion": true,
+      "requiredChecksPolicy": "Require Quality, all three native build jobs, CodeQL and dependency review after successful check names are observed."
+    }
+  },
+  "verificationLimits": {
+    "repositoryAdministration": "Connector has no repository settings mutation tools.",
+    "branchProtection": "GET returned 403 Resource not accessible by integration; unknown, not assumed disabled.",
+    "securityAndAnalysis": "Not exposed by repository response; unknown, not assumed disabled.",
+    "projects": "Repository Projects feature observed disabled. No project board has been created.",
+    "appliedRemoteSettings": []
+  }
+}

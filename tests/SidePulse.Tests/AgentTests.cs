@@ -89,6 +89,38 @@ public sealed class AgentTests
             Assert.Equal(original, File.ReadAllText(target));
         });
     }
+    [Theory]
+    [InlineData(AgentProvider.Codex)]
+    [InlineData(AgentProvider.Copilot)]
+    public void ReinstallWithADifferentExecutableFailsWithoutChangingFiles(AgentProvider provider)
+    {
+        WithDirectory(directory =>
+        {
+            var target = Path.Combine(directory, "hooks.json");
+            var installer = new HookInstallation(Path.Combine(directory, "manifests"));
+            installer.Install(target, provider, HookConfiguration.Generate(provider, "/old/sidepulse-net", false), false);
+            var before = File.ReadAllBytes(target);
+            var error = Assert.Throws<IOException>(() => installer.Install(target, provider, HookConfiguration.Generate(provider, "/new/sidepulse-net", false), false));
+            Assert.Contains("Uninstall", error.Message);
+            Assert.Equal(before, File.ReadAllBytes(target));
+        });
+    }
+    [Fact]
+    public void UninstallPreviewDoesNotCreateALockFile()
+    {
+        WithDirectory(directory =>
+        {
+            var target = Path.Combine(directory, "hooks.json");
+            var installer = new HookInstallation(Path.Combine(directory, "manifests"));
+            installer.Install(target, AgentProvider.Codex, HookConfiguration.Generate(AgentProvider.Codex, "/tmp/sidepulse-net", false), false);
+            var before = File.ReadAllBytes(target);
+            File.Delete(target + ".sidepulse-net.lock");
+            Assert.Equal("preview-remove", installer.Uninstall(target, true).State);
+            Assert.False(File.Exists(target + ".sidepulse-net.lock"));
+            Assert.Equal(before, File.ReadAllBytes(target));
+            Assert.Equal("installed", installer.Status(target).State);
+        });
+    }
     [Fact]
     public void UninstallRefusesChangedSettingsAndInvalidInputIsNotOverwritten()
     {

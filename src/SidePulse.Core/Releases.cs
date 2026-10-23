@@ -62,6 +62,11 @@ public sealed class GitHubReleases(HttpClient client)
     }
     public async Task<AvailableRelease?> Latest(bool includePrerelease, CancellationToken cancellationToken = default)
     {
+        // ResponseHeadersRead completes HttpClient's timeout at the headers. Keep the
+        // same deadline active while reading every body and release-history page.
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(client.Timeout);
+        cancellationToken = deadline.Token;
         if (!includePrerelease)
         {
             using var response = await Get(new($"https://api.github.com/repos/{Repository}/releases/latest"), cancellationToken);
@@ -117,19 +122,20 @@ public sealed class GitHubReleases(HttpClient client)
         var expected = Checksum(System.Text.Encoding.UTF8.GetString(sumBytes), name);
         Directory.CreateDirectory(directory);
         var destination = Path.Combine(directory, name);
+        var created = false;
         try
         {
             using var response = await Get(AssetUri(release, name), cancellationToken);
             response.EnsureSuccessStatusCode();
             await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken))
             await using (var file = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            { await CopyBounded(source, file, MaximumArchiveBytes, cancellationToken); }
+            { created = true; await CopyBounded(source, file, MaximumArchiveBytes, cancellationToken); }
             if (new FileInfo(destination).Length != archive.Size) throw new IOException("Download length does not match the release metadata.");
             var hash = InstallationManifest.Hash(destination);
             if (!hash.Equals(expected, StringComparison.OrdinalIgnoreCase) || archive.Digest is { } digest && !digest.Equals("sha256:" + hash, StringComparison.OrdinalIgnoreCase)) throw new IOException("SHA-256 verification failed; installation was not changed.");
             return destination;
         }
-        catch { File.Delete(destination); throw; }
+        catch { if (created) File.Delete(destination); throw; }
     }
     private static Uri AssetUri(AvailableRelease release, string asset) => new($"https://github.com/{Repository}/releases/download/{Uri.EscapeDataString(release.Tag)}/{Uri.EscapeDataString(asset)}");
     public static string Checksum(string text, string filename)

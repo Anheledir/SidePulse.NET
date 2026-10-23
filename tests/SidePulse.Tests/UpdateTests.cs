@@ -81,6 +81,42 @@ public sealed class UpdateTests
         Assert.False(File.Exists(path));
     }
     [Fact]
+    public async Task DownloadCollisionPreservesTheExistingFile()
+    {
+        using var temp = new Temp();
+        var name = GitHubReleases.AssetName("win-x64");
+        var path = System.IO.Path.Combine(temp.Path, name);
+        File.WriteAllText(path, "personal file");
+        var sums = new string('a', 64) + "  " + name + "\n";
+        using var client = new HttpClient(new Handler(request => new(HttpStatusCode.OK)
+        { Content = new StringContent(request.RequestUri!.AbsolutePath.EndsWith("SHA256SUMS", StringComparison.Ordinal) ? sums : "package") }));
+        var release = new AvailableRelease("v1.0.0", "1.0.0", false, "ignored", [new(name, 7, null), new("SHA256SUMS", sums.Length, null)]);
+        await Assert.ThrowsAsync<IOException>(() => new GitHubReleases(client).Download(release, "win-x64", temp.Path));
+        Assert.Equal("personal file", File.ReadAllText(path));
+    }
+    [Fact]
+    public async Task ReleaseBodyReadHonorsCancellationAfterHeaders()
+    {
+        using var client = new HttpClient(new Handler(_ => new(HttpStatusCode.OK) { Content = new StreamContent(new WaitingStream()) })) { Timeout = TimeSpan.FromMilliseconds(100) };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new GitHubReleases(client).Latest(false));
+    }
+    private sealed class WaitingStream : MemoryStream
+    {
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        { await Task.Delay(Timeout.Infinite, cancellationToken); return 0; }
+    }
+    [Fact]
+    public async Task DirectoryOnlyArchiveEntriesAreBounded()
+    {
+        using var temp = new Temp();
+        var archive = System.IO.Path.Combine(temp.Path, "directories.zip");
+        using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create))
+            for (var i = 0; i <= 10000; i++) zip.CreateEntry($"directory-{i}/");
+        var error = await Assert.ThrowsAsync<IOException>(() => UpdatePackage.Extract(archive, System.IO.Path.Combine(temp.Path, "stage"), "1.0.0", "win-x64"));
+        Assert.Contains("entry limit", error.Message);
+        Assert.False(Directory.Exists(System.IO.Path.Combine(temp.Path, "stage")));
+    }
+    [Fact]
     public void MissingOrAmbiguousChecksumIsRefused()
     {
         var hash = new string('a', 64);

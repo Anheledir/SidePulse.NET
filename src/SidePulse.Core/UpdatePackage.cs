@@ -66,7 +66,12 @@ public static class UpdatePackage
         if (Directory.Exists(destination)) throw new IOException("Update staging directory already exists.");
         Directory.CreateDirectory(destination);
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        long total = 0; var count = 0;
+        long total = 0; var count = 0; var entries = 0;
+        void CountEntry()
+        {
+            if (++entries > 10000) throw new IOException("Update archive exceeds its entry limit.");
+            cancellationToken.ThrowIfCancellationRequested();
+        }
         async Task ExtractFile(string name, long length, Stream source)
         {
             name = InstallationManifest.Relative(name);
@@ -84,6 +89,7 @@ public static class UpdatePackage
                 using var zip = ZipFile.OpenRead(archive);
                 foreach (var entry in zip.Entries)
                 {
+                    CountEntry();
                     var kind = (entry.ExternalAttributes >> 16) & 0xf000;
                     if (kind is not (0 or 0x8000 or 0x4000)) throw new IOException("Links and special files are not allowed in update archives.");
                     if (entry.FullName.EndsWith('/')) { InstallationManifest.Relative(entry.FullName.TrimEnd('/')); continue; }
@@ -97,6 +103,7 @@ public static class UpdatePackage
                 await using var reader = new TarReader(gzip);
                 while (await reader.GetNextEntryAsync(cancellationToken: cancellationToken) is { } entry)
                 {
+                    CountEntry();
                     var name = entry.Name.StartsWith("./", StringComparison.Ordinal) ? entry.Name[2..] : entry.Name;
                     if (entry.EntryType == TarEntryType.Directory) { if (name is not ("" or ".")) InstallationManifest.Relative(name.TrimEnd('/')); continue; }
                     if (entry.EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile)) throw new IOException("Links and special files are not allowed in update archives.");
