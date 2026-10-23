@@ -178,3 +178,8 @@ The event mapping follows the [GitHub Copilot hook reference](https://docs.githu
 Actual Copilot/Windows and phone/hardware validation remain separate from unit
 and simulated transport tests. Keep the working Python installation available
 until this preview is validated on your setup.
+
+## Animation studio
+
+See [[Animations]] for Dot/Pro previews, custom editing and agent profiles, and
+[[Scripting-and-Menus]] for interactive command building and quiet/JSON output.

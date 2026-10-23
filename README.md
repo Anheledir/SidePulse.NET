@@ -66,7 +66,7 @@ commands and `link pair/list/import/default/rename/remove`. Use `--help` for det
 The command name `sidepulse-net` coexists with the existing Python port.
 
 QR pairing and protected token storage use DPAPI on Windows, Keychain on macOS
-and Secret Service on Linux. Login-startup registration, full DSL validation,
+and Secret Service on Linux. Login-startup registration, firmware-verified simulator parity,
 remaining upstream integrations and signed installers remain planned. The wiki's
 concept pages describe the intended complete product; the getting-started page
 records what is implemented now.
@@ -101,3 +101,28 @@ sidepulse-net host stop
 See [agent integrations](docs/wiki/Agent-Integrations.md) for provider capabilities,
 configuration backups and trust requirements, and [host management](docs/wiki/Host-Management.md)
 for logs and foreground use. Additional providers remain planned.
+
+## Animation studio and scripting
+
+```shell
+sidepulse-net animations preview cyan-roll --both
+sidepulse-net animations edit --file custom.LED --model dot
+sidepulse-net animations validate custom.LED --quiet
+sidepulse-net animations import personal --file custom.LED --model dot
+sidepulse-net animations apply personal --model dot --phone default --brightness 40
+sidepulse-net profiles set personal --state Working --pattern cyan-roll --brightness 40
+sidepulse-net host start --phone default --profile personal --model dot
+sidepulse-net about credits
+sidepulse-net about licenses --full
+```
+
+Run with no arguments in a terminal for arrow-key menus and guided setup. Review
+shows the single-line command for copying into scripts. Redirected input/output,
+`--no-interactive`, `--quiet` and `--json` never open menus. Errors use stderr and
+nonzero exit codes. Preview is entirely Spectre.Console and supports pause,
+frame stepping and restart; terminal colors/timing approximate the firmware.
+
+See [animations](docs/wiki/Animations.md) and
+[scripting and menus](docs/wiki/Scripting-and-Menus.md). `docs --offline` reads
+bundled documentation; `about` provides manufacturer/upstream/project links and
+licensed dependency credits. Browser opening requires `--open`.

@@ -96,6 +96,10 @@ public sealed class HookCommand : AsyncCommand<HookSettings>
 }
 public sealed class HostSettings : TargetSettings
 {
+    [CommandOption("--profile <NAME>")]
+    public string? Profile { get; init; }
+    [CommandOption("--model <MODEL>")]
+    public DeviceModel? Model { get; init; }
     [CommandOption("--log-file <PATH>")]
     public string? LogFile { get; init; }
     [CommandOption("--background")]
@@ -103,11 +107,17 @@ public sealed class HostSettings : TargetSettings
     [CommandOption("--plain")]
     [Description("Write plain state changes instead of terminal panels.")]
     public bool Plain { get; init; }
+    public override ValidationResult Validate()
+    {
+        var result = base.Validate();
+        return !result.Successful ? result : Model is { } model && !Enum.IsDefined(model) ? ValidationResult.Error("Choose dot or pro.") : ValidationResult.Success();
+    }
 }
 public sealed class HostCommand : AsyncCommand<HostSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, HostSettings settings, CancellationToken cancellationToken)
     {
+        var patterns = AnimationLibrary.ResolveProfile(settings.Profile, settings.Model, settings.Device);
         if (settings.Background) HostLogs.Detach();
         using var shutdown = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         ConsoleCancelEventHandler cancel = (_, args) => { args.Cancel = true; shutdown.Cancel(); };
@@ -189,7 +199,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                     // Re-enqueue repeated states to recover after a failed delivery.
                     if (state != queued || !settings.DryRun)
                     {
-                        outputs.Writer.TryWrite(LedProgram.ForState(state));
+                        outputs.Writer.TryWrite(patterns[state]);
                         queued = state;
                     }
                 }

@@ -1,3 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup><PackageReference Include="System.Security.Cryptography.ProtectedData" /></ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Animations/*.LED" />
+  </ItemGroup>
 </Project>

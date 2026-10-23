@@ -18,3 +18,6 @@
 
 - [[Agent integrations|Agent-Integrations]]
 - [[Host management|Host-Management]]
+
+- [[Animations]]
+- [[Scripting and menus|Scripting-and-Menus]]

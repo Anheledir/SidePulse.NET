@@ -1,0 +1,51 @@
+[
+  {
+    "name": "QRCoder",
+    "version": "1.8.1",
+    "license": "MIT",
+    "authors": "Raffael Herrmann, Shane Krueger",
+    "website": ""
+  },
+  {
+    "name": "Spectre.Console",
+    "version": "0.57.2",
+    "license": "MIT",
+    "authors": "Patrik Svensson, Phil Scott, Nils Andresen, C\u00e9dric Luthi",
+    "website": "https://github.com/spectreconsole/spectre.console"
+  },
+  {
+    "name": "Spectre.Console.Cli",
+    "version": "0.57.2",
+    "license": "MIT",
+    "authors": "Patrik Svensson, Phil Scott, Nils Andresen, C\u00e9dric Luthi, Frank Ray",
+    "website": "https://github.com/spectreconsole/spectre.console.cli"
+  },
+  {
+    "name": "Microsoft.Win32.SystemEvents",
+    "version": "6.0.0",
+    "license": "MIT",
+    "authors": "Microsoft",
+    "website": "https://dot.net/"
+  },
+  {
+    "name": "Spectre.Console.Ansi",
+    "version": "0.57.2",
+    "license": "MIT",
+    "authors": "Patrik Svensson, Phil Scott, Nils Andresen, C\u00e9dric Luthi",
+    "website": "https://github.com/spectreconsole/spectre.console"
+  },
+  {
+    "name": "System.Drawing.Common",
+    "version": "6.0.0",
+    "license": "MIT",
+    "authors": "Microsoft",
+    "website": "https://dot.net/"
+  },
+  {
+    "name": "System.Security.Cryptography.ProtectedData",
+    "version": "10.0.13",
+    "license": "MIT",
+    "authors": "Microsoft",
+    "website": "https://dot.net/"
+  }
+]

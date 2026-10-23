@@ -64,8 +64,15 @@ public sealed class HostStopCommand : AsyncCommand<HostActionSettings>
 }
 public sealed class HostStartSettings : TargetSettings
 {
+    [CommandOption("--profile <NAME>")] public string? Profile { get; init; }
+    [CommandOption("--model <MODEL>")] public DeviceModel? Model { get; init; }
     [CommandOption("--exe <PATH>")]
     public string Executable { get; init; } = Environment.ProcessPath ?? "sidepulse-net";
+    public override ValidationResult Validate()
+    {
+        var result = base.Validate();
+        return !result.Successful ? result : Model is { } model && !Enum.IsDefined(model) ? ValidationResult.Error("Choose dot or pro.") : ValidationResult.Success();
+    }
 }
 public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
 {
@@ -73,6 +80,7 @@ public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
     {
         var existing = await HostControl.Request("status", cancellationToken);
         if (existing.Running) { if (settings.Json) Output.Print(existing); else AnsiConsole.WriteLine("Host is already running. Stop it before changing its target."); return 0; }
+        _ = AnimationLibrary.ResolveProfile(settings.Profile, settings.Model, settings.Device);
         var exe = HookConfiguration.Executable(settings.Executable);
         var directory = Path.Combine(Path.GetDirectoryName(LinkStore.DefaultPath)!, "host");
         if (OperatingSystem.IsWindows()) Directory.CreateDirectory(directory);
@@ -85,6 +93,8 @@ public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
         if (settings.Device is { } device) { info.ArgumentList.Add("--device"); info.ArgumentList.Add(Path.GetFullPath(device)); }
         if (settings.Phone is { } phone) { info.ArgumentList.Add("--phone"); info.ArgumentList.Add(phone); }
         if (settings.TokenEnvironment is { } variable) { info.ArgumentList.Add("--token-env"); info.ArgumentList.Add(variable); }
+        if (settings.Profile is { } profile) { info.ArgumentList.Add("--profile"); info.ArgumentList.Add(profile); }
+        if (settings.Model is { } model) { info.ArgumentList.Add("--model"); info.ArgumentList.Add(model.ToString()); }
         if (settings.DryRun) info.ArgumentList.Add("--dry-run");
         using var process = Process.Start(info) ?? throw new IOException("Could not start the host.");
         if (!OperatingSystem.IsWindows()) process.StandardInput.Close();

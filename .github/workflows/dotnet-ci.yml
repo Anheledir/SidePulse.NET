@@ -94,6 +94,10 @@ jobs:
           $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
           python scripts/cli_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/terminal_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/animation_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/agent_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish and exercise self-contained previews
@@ -114,6 +118,8 @@ jobs:
             if ($rid -eq $native) {
               $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
               python scripts/cli_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              python scripts/animation_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               python scripts/agent_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

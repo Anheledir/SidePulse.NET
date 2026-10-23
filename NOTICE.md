@@ -59,3 +59,19 @@ these adapters. The credential APIs do not require a cloud account or token.
 CLI host/agent commands are new .NET implementations based on the public provider
 protocols linked in `docs/wiki/Agent-Integrations.md`. No provider application
 source or transcript data is copied. The adapter tests use synthetic payloads.
+
+## Animation studio and credits
+
+`src/SidePulse.Core/Animations/*.LED` contains unchanged upstream animation assets
+from `src/sidepulse/resources/animations/` at the reference revision above.
+Copyright (c) 2026 Peter Kuhar, MIT. The retained upstream license accompanies
+these assets. `Animation.cs` is a new managed interpreter based on that revision's
+`LEDS_FORMAT.md`; it is an approximation and does not embed the firmware/WASM.
+
+The offline dependency registry in `src/SidePulse.Cli/Dependencies.json` is derived
+from committed NuGet locks and package metadata. License texts and notices for
+Microsoft package dependencies are retained under `third-party/dotnet-packages`.
+All seven resolved runtime packages, including transitive packages, appear in
+`about credits` / `about licenses`. Self-contained runtime notices are additionally
+included by CI under `third-party/dotnet`. No affiliate relationship is implied;
+manufacturer links are ordinary URLs.

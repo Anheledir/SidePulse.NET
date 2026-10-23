@@ -41,10 +41,14 @@ def main():
             assert json.loads(run('agents', 'status', provider, '--config', str(path), '--json'))['State'] == 'installed'
             configs[provider] = (path, json.loads(path.read_text()))
 
+        pattern = root / 'working.LED'
+        pattern.write_text('off\n#123456\n')
+        run('animations', 'import', 'smoke-working', '--file', str(pattern), '--model', 'dot', '--quiet')
+        run('profiles', 'set', 'smoke', '--state', 'Working', '--pattern', 'smoke-working', '--brightness', '40', '--quiet')
         print("Agent setup/preview checks passed; starting detached host.", flush=True)
         started = False
         try:
-            first = json.loads(run('host', 'start', '--exe', exe, '--device', directory, '--json', timeout=25))
+            first = json.loads(run('host', 'start', '--exe', exe, '--device', directory, '--profile', 'smoke', '--model', 'dot', '--json', timeout=25))
             started = True
             print('Detached host ready.', flush=True)
             assert first['Running']
@@ -81,6 +85,11 @@ def main():
                 time.sleep(0.1)
             assert len(snapshot['Sessions']) == 4, snapshot
             assert {s['Provider'] for s in snapshot['Sessions']} == {'Copilot', 'Codex', 'Claude', 'Kiro'}
+            for _ in range(30):
+                if target.read_text().strip() == 'brightness 102\noff\n#123456':
+                    break
+                time.sleep(0.1)
+            assert target.read_text().strip() == 'brightness 102\noff\n#123456'
             send('claude', 'Stop')
             assert status()['State'] == 'Working'
             for provider in ('copilot', 'codex', 'kiro'):

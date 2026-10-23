@@ -2,6 +2,11 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using SidePulse.Cli;
 
+args = TerminalMode.Configure(args);
+try { args = Interactive.Resolve(args) ?? []; }
+catch (Exception ex) { return TerminalMode.Error(ex); }
+if (args.Length == 0) return 0;
+
 // Preserve the original foreground shorthand while adding lifecycle subcommands.
 if (args.Length >= 1 && args[0] == "host" && (args.Length == 1 || args[1].StartsWith('-') && args[1] is not "--help" and not "-h"))
     args = new[] { "host", "run" }.Concat(args.Skip(1)).ToArray();
@@ -10,7 +15,33 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("sidepulse-net");
-    config.SetApplicationVersion("0.1.0-alpha.4");
+    config.SetApplicationVersion("0.1.0-alpha.5");
+    config.AddBranch("animations", animations =>
+    {
+        animations.SetDescription("Create, validate, preview and send Dot / Pro LED patterns.");
+        animations.AddCommand<PatternListCommand>("list");
+        animations.AddCommand<PatternPreviewCommand>("preview");
+        animations.AddCommand<PatternValidateCommand>("validate");
+        animations.AddCommand<PatternApplyCommand>("apply");
+        animations.AddCommand<PatternEditorCommand>("edit");
+        animations.AddCommand<PatternImportCommand>("import");
+        animations.AddCommand<PatternExportCommand>("export");
+    });
+    config.AddBranch("profiles", profiles =>
+    {
+        profiles.AddCommand<ProfileSetCommand>("set");
+        profiles.AddCommand<ProfileShowCommand>("show");
+    });
+    config.AddBranch("about", about =>
+    {
+        about.AddCommand<AboutCommand>("info");
+        about.AddCommand<WebsiteCommand>("website");
+        about.AddCommand<GithubCommand>("github");
+        about.AddCommand<UpstreamCommand>("upstream");
+        about.AddCommand<CreditsCommand>("credits");
+        about.AddCommand<LicensesCommand>("licenses");
+    });
+    config.AddCommand<DocsCommand>("docs");
     config.AddBranch("link", links =>
     {
         links.SetDescription("Pair and manage protected iPhone links.");
@@ -48,8 +79,8 @@ app.Configure(config =>
     config.SetExceptionHandler((exception, _) =>
     {
         // Credential-bearing HTTP exception details are never displayed.
-        AnsiConsole.MarkupLine("[red]Error:[/] " + Markup.Escape(exception.Message));
-        return 1;
+        return TerminalMode.Error(exception);
     });
 });
-return app.Run(args);
+try { return app.Run(args); }
+catch (Exception ex) { return TerminalMode.Error(ex); }
