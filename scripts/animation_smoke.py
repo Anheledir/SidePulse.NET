@@ -21,7 +21,8 @@ def main(executable):
                 assert not result.stderr, (args, result.stderr)
             return result
 
-        patterns = json.loads(run('animations', 'list', '--json').stdout)
+        patterns = json.loads(run('--json', 'animations', 'list').stdout)
+        assert patterns == json.loads(run('animations', 'list', '--json').stdout)
         assert any(p['Name'] == 'cyan-roll' and p['Models'] == ['Dot', 'Pro'] for p in patterns)
         frames = json.loads(run('animations', 'preview', 'cyan-roll', '--both', '--at', '500', '--json').stdout)
         assert [len(f['colors']) for f in frames] == [2, 8]

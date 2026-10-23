@@ -22,7 +22,15 @@ public static class TerminalMode
         if (Quiet && !Json) Console.SetOut(TextWriter.Null);
         if (noColor || Quiet) AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Out), Ansi = Console.IsOutputRedirected || Quiet ? AnsiSupport.No : AnsiSupport.Detect, ColorSystem = ColorSystemSupport.NoColors });
         var literal = false;
-        return args.Where(a => { if (a == "--") literal = true; return literal || a is not "--quiet" and not "--no-interactive" and not "--no-color"; }).ToArray();
+        var result = args.Where(a => { if (a == "--") literal = true; return literal || a is not "--quiet" and not "--no-interactive" and not "--no-color"; }).ToList();
+        // Spectre binds JSON to individual commands; normalize a leading global spelling.
+        if (result.FirstOrDefault() == "--json")
+        {
+            while (result.FirstOrDefault() == "--json") result.RemoveAt(0);
+            var divider = result.IndexOf("--");
+            result.Insert(divider < 0 ? result.Count : divider, "--json");
+        }
+        return result.ToArray();
     }
     public static int Error(Exception exception)
     {
