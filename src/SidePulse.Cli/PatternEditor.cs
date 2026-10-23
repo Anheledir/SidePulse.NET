@@ -53,6 +53,7 @@ public sealed class PatternEditorCommand : AsyncCommand<EditorSettings>
                     // Detect external edits before replacing the file.
                     AnimationLibrary.WriteFile(path, program.Text + "\n", original is not null);
                     original = program.Text + "\n"; dirty = false;
+                    Console.WriteLine("Pattern saved: " + path);
                     TerminalMode.Footer(["animations", "preview", "--file", path, "--model", settings.Model.ToString().ToLowerInvariant()]);
                     continue;
                 }

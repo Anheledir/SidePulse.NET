@@ -85,10 +85,7 @@ def main(executable):
             editor.send(b'\x1b')  # back to editor
             editor.until('Save to library')
             editor.send(b'\x1b[B' * 5 + b'\r')  # save
-            editor.until('Save to library')
-            deadline = time.monotonic() + 5
-            while not file.exists() and time.monotonic() < deadline:
-                time.sleep(0.05)
+            editor.until('Pattern saved:')
             assert file.exists() and '#00e5ff' in file.read_text(encoding='utf-8')
             editor.send(b'\x1b')
             editor.finish()

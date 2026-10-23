@@ -14,6 +14,7 @@ using var logOutput = HostLogs.Redirect(args);
 var app = new CommandApp();
 app.Configure(config =>
 {
+    config.ConfigureConsole(AnsiConsole.Console);
     config.SetApplicationName("sidepulse-net");
     config.SetApplicationVersion("0.1.0-alpha.5");
     config.AddBranch("animations", animations =>
