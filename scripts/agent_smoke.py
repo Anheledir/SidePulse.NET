@@ -41,10 +41,12 @@ def main():
             assert json.loads(run('agents', 'status', provider, '--config', str(path), '--json'))['State'] == 'installed'
             configs[provider] = (path, json.loads(path.read_text()))
 
+        print("Agent setup/preview checks passed; starting detached host.", flush=True)
         started = False
         try:
             first = json.loads(run('host', 'start', '--exe', exe, '--device', directory, '--json', timeout=25))
             started = True
+            print('Detached host ready.', flush=True)
             assert first['Running']
             assert status()['Running']
             second = json.loads(run('host', 'start', '--exe', exe, '--device', directory, '--json'))
@@ -70,6 +72,7 @@ def main():
                 assert result.returncode == 0 and not result.stdout and not result.stderr, (provider, result.stdout, result.stderr)
 
             for provider in configs:
+                print('Exercising ' + provider + ' wrapper.', flush=True)
                 send(provider, 'userPromptSubmitted' if provider == 'copilot' else 'UserPromptSubmit')
             for _ in range(30):
                 snapshot = status()
@@ -91,6 +94,7 @@ def main():
             run('host', 'stop', '--json')
             started = False
             assert not status()['Running']
+            print('Host stopped gracefully.', flush=True)
             logs = run('host', 'logs', '--tail', '10')
             assert 'DO-NOT-LOG-THIS' not in logs
         finally:

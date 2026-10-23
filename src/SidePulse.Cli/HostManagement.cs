@@ -76,14 +76,16 @@ public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
         if (OperatingSystem.IsWindows()) Directory.CreateDirectory(directory);
         else Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         var log = Path.Combine(directory, "host.log");
-        var info = new ProcessStartInfo(exe) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = Path.GetDirectoryName(exe)! };
+        var info = new ProcessStartInfo(exe) { UseShellExecute = OperatingSystem.IsWindows(), WindowStyle = ProcessWindowStyle.Hidden, CreateNoWindow = true,
+            RedirectStandardInput = !OperatingSystem.IsWindows(), RedirectStandardOutput = !OperatingSystem.IsWindows(),
+            RedirectStandardError = !OperatingSystem.IsWindows(), WorkingDirectory = Path.GetDirectoryName(exe)! };
         foreach (var value in new[] { "host", "run", "--plain", "--background", "--log-file", log }) info.ArgumentList.Add(value);
         if (settings.Device is { } device) { info.ArgumentList.Add("--device"); info.ArgumentList.Add(Path.GetFullPath(device)); }
         if (settings.Phone is { } phone) { info.ArgumentList.Add("--phone"); info.ArgumentList.Add(phone); }
         if (settings.TokenEnvironment is { } variable) { info.ArgumentList.Add("--token-env"); info.ArgumentList.Add(variable); }
         if (settings.DryRun) info.ArgumentList.Add("--dry-run");
         using var process = Process.Start(info) ?? throw new IOException("Could not start the host.");
-        process.StandardInput.Close();
+        if (!OperatingSystem.IsWindows()) process.StandardInput.Close();
         for (var attempt = 0; attempt < 5; attempt++)
         {
             if (process.HasExited) throw new IOException("Host exited during startup. Check host.log in the configuration directory.");
