@@ -21,7 +21,11 @@ public sealed class Sessions
             if (old is null) return false;
             sessions.Remove(old.Id);
         }
-        sessions[item.SessionId] = new(item.SessionId, item.State, item.Timestamp);
+        // A turn-ending signal does not establish recovery from an earlier error.
+        // A subsequent working/waiting event or explicit session end can clear it.
+        var state = previous?.State == AgentState.Error && item.State == AgentState.Done
+            ? AgentState.Error : item.State;
+        sessions[item.SessionId] = new(item.SessionId, state, item.Timestamp);
         return true;
     }
     public AgentState State

@@ -61,6 +61,17 @@ public sealed class CoreTests
         Assert.False(sessions.Apply(new("c", AgentState.Done, 0)));
         Assert.Equal(AgentState.Waiting, sessions.State);
     }
+    [Fact]
+    public void TurnEndDoesNotHideAnUnhandledError()
+    {
+        var sessions = new Sessions();
+        sessions.Apply(new("a", AgentState.Error, 1));
+        sessions.Apply(new("a", AgentState.Done, 2));
+        Assert.Equal(AgentState.Error, sessions.State);
+        sessions.Apply(new("a", AgentState.Working, 3));
+        Assert.Equal(AgentState.Working, sessions.State);
+        Assert.Null(CopilotEvents.Parse("agentStop", "{\"sessionId\":\"a\",\"timestamp\":4}"));
+    }
     [Theory]
     [InlineData("permissionRequest")]
     [InlineData("subagentStop")]

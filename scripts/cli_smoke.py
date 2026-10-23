@@ -22,7 +22,7 @@ def main():
     assert not malformed.stdout and not malformed.stderr
     disconnected = run('hook', 'agentStop', input=json.dumps({'sessionId': 'a', 'timestamp': 1, 'stopReason': 'end_turn'}))
     assert not disconnected.stdout and not disconnected.stderr
-    with tempfile.TemporaryDirectory() as directory:
+    with tempfile.TemporaryDirectory(prefix='SidePulse test ü ') as directory:
         target = Path(directory) / 'LEDS.LED'
         target.write_text('off')
         run('state', 'waiting', '--device', directory)
