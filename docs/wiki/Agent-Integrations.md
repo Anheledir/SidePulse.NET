@@ -1,7 +1,7 @@
 # Agent integrations
 
 The preview supports Copilot CLI, current local Codex lifecycle hooks, Claude Code
-and Kiro CLI V3 standalone hooks. They feed one current-user host and share the
+Kiro CLI V3 standalone hooks and OpenCode local plugins. They feed one current-user host and share the
 same status reducer. Provider IDs namespace sessions, so equal session IDs from
 different tools cannot collide. `agents list --json` reports supported events
 and limitations. Unknown providers/events are not guessed from terminal text.
@@ -15,6 +15,8 @@ sidepulse-net agents install copilot
 sidepulse-net agents install codex
 sidepulse-net agents install claude
 sidepulse-net agents install kiro
+sidepulse-net agents install opencode --dry-run
+sidepulse-net agents install opencode
 sidepulse-net agents status claude --json
 sidepulse-net agents uninstall claude --dry-run
 sidepulse-net agents uninstall claude
@@ -31,6 +33,7 @@ scope unless duplicate events are intended.
 | Copilot CLI | `$COPILOT_HOME/hooks/sidepulse-net.json` or `~/.copilot/hooks/sidepulse-net.json` | Dedicated version-1 hook file; Bash and PowerShell wrappers |
 | Codex | `$CODEX_HOME/hooks.json` or `~/.codex/hooks.json` | Merge lifecycle groups into the hooks object |
 | Claude Code | `~/.claude/settings.json` | Merge lifecycle groups while preserving unrelated settings |
+| OpenCode | `$OPENCODE_CONFIG_DIR/plugins/sidepulse-net.js` or `$XDG_CONFIG_HOME/opencode/plugins/sidepulse-net.js` (default `~/.config/opencode/plugins/sidepulse-net.js`) | Dedicated local JavaScript event plugin; no npm dependency |
 | Kiro CLI V3 | `~/.kiro/hooks/sidepulse-net.json` | Dedicated version-v1 standalone hook document |
 
 Installation is explicit. Dry runs show only the new managed fragment and target,
@@ -46,6 +49,9 @@ restore a missing/modified backup. Review and merge those cases manually. A
 pending installation interrupted before its target write can be removed safely.
 Backups remain available after removal. Do not delete them before uninstalling.
 Malformed JSON, unsupported hook shapes and unowned dedicated files are refused.
+OpenCode installs a JavaScript file instead of JSON; use
+`--config .opencode/plugins/sidepulse-net.js` for project scope. It uses a directly
+spawned executable on every platform, without Bash or PowerShell.
 The installer preserves permission settings and never approves tools, bypasses
 trust, or edits agent instructions. Restart the agent after installing/removing.
 Codex requires reviewing the new definitions in `/hooks` before they execute.
@@ -79,6 +85,41 @@ use a PowerShell 7 encoded command to avoid parent-shell quoting ambiguities;
 Copilot includes its native PowerShell field. Unix uses quoted shell commands.
 These are passive status hooks: their output never contains policy decisions.
 
+## OpenCode
+
+```shell
+sidepulse-net agents install opencode
+sidepulse-net host start --phone default
+sidepulse-net agents status opencode --json
+sidepulse-net agents uninstall opencode --dry-run
+```
+
+Restart OpenCode after installation. The plugin subscribes to native events:
+
+| Event | SidePulse state |
+|---|---|
+| `session.status` busy/retry | Working |
+| `permission.asked`, `question.asked` | Waiting |
+| Last pending permission/question replied or rejected | Working |
+| `session.error` | Error |
+| Session created/deleted or status idle | Idle |
+
+An error remains visible through a following idle event until activity resumes
+or the session is deleted. Pending requests are tracked separately per session and request. Busy/retry events
+and individual replies cannot clear another pending prompt. Child sessions keep
+their own identity and cannot finish a parent. Idle may also follow cancellation,
+so this adapter deliberately does not infer Done. A terminated OpenCode process
+has no guaranteed shutdown event; use `host reset` to clear abandoned sessions.
+Restarting the plugin does not reconstruct pending requests from earlier events.
+
+The plugin forwards only session identity and status, never prompt text, question
+contents, permission rules or tool arguments. Child processes are silent, shell-free
+and bounded to 1.5 seconds. A missing host or executable does not interrupt the agent.
+It never answers a permission request or changes OpenCode configuration/trust policy.
+Local plugin loading and event shapes are based on the official plugin reference
+and upstream v1.2.27 session, permission and question schemas. Synthetic native CI
+runs exercise the generated plugin; actual OpenCode/version acceptance remains required.
+
 ## Validation and limits
 
 Tests cover representative documented payloads, each provider's configuration
@@ -100,5 +141,9 @@ Checked 2026-10-23:
 - [Copilot hook reference](https://docs.github.com/en/copilot/reference/hooks-reference)
 - [Codex lifecycle hooks](https://developers.openai.com/codex/hooks)
 - [Claude Code hooks](https://code.claude.com/docs/en/hooks)
+- [OpenCode plugins](https://opencode.ai/docs/plugins/)
+- [OpenCode session status schema](https://github.com/anomalyco/opencode/blob/v1.2.27/packages/opencode/src/session/status.ts)
+- [OpenCode permission events](https://github.com/anomalyco/opencode/blob/v1.2.27/packages/opencode/src/permission/service.ts)
+- [OpenCode question events](https://github.com/anomalyco/opencode/blob/v1.2.27/packages/opencode/src/question/service.ts)
 - [Kiro standalone schema](https://kiro.dev/docs/hooks/)
 - [Kiro triggers and session identity](https://kiro.dev/docs/hooks/types/)

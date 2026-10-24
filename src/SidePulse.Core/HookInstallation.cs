@@ -40,9 +40,9 @@ public sealed class HookInstallation(string manifestDirectory)
             {
                 var originalBytes = existingManifest.BeforeHash == "absent" ? null : existingManifest.Backup is { } backupPath ? Read(backupPath) : null;
                 if (Hash(originalBytes) != existingManifest.BeforeHash) throw new IOException("The original backup is missing or modified. Review it before reinstalling.");
-                var originalSettings = originalBytes is null ? null : JsonNode.Parse(originalBytes)!.AsObject();
+                var originalSettings = originalBytes is null ? null : provider == AgentProvider.OpenCode ? new JsonObject() : JsonNode.Parse(originalBytes)!.AsObject();
                 var requested = HookConfiguration.Merge(provider, originalSettings, generated);
-                if (Hash(Serialize(requested)) != existingManifest.InstalledHash)
+                if (Hash(Serialize(provider, requested)) != existingManifest.InstalledHash)
                     throw new IOException("The requested hooks differ from the installed hooks. Uninstall before reinstalling with a different executable or configuration; no files were changed.");
                 return status;
             }
@@ -52,12 +52,12 @@ public sealed class HookInstallation(string manifestDirectory)
         JsonObject? original;
         try
         {
-            original = before is null ? null : JsonNode.Parse(before)?.AsObject();
+            original = before is null ? null : provider == AgentProvider.OpenCode ? new JsonObject() : JsonNode.Parse(before)?.AsObject();
             if (before is not null && original is null) throw new IOException("Existing configuration must be a JSON object.");
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException) { throw new IOException("Existing configuration must be valid JSON. No files were changed."); }
         var merged = HookConfiguration.Merge(provider, original, generated);
-        var after = Serialize(merged);
+        var after = Serialize(provider, merged);
         if (dryRun) return new("preview", target, null);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         Directory.CreateDirectory(manifestDirectory);
@@ -111,7 +111,7 @@ public sealed class HookInstallation(string manifestDirectory)
         if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         return new FileStream(path, options);
     }
-    private static byte[] Serialize(JsonObject value) => System.Text.Encoding.UTF8.GetBytes(value.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+    private static byte[] Serialize(AgentProvider provider, JsonObject value) => System.Text.Encoding.UTF8.GetBytes(provider == AgentProvider.OpenCode ? value["plugin"]!.GetValue<string>() : value.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
     private static void AtomicWrite(string path, byte[] bytes)
     {
         var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";

@@ -45,7 +45,9 @@ public sealed class AgentSettings : CommandSettings
                 AgentProvider.Copilot => Path.Combine(Home("COPILOT_HOME", ".copilot"), "hooks", "sidepulse-net.json"),
                 AgentProvider.Codex => Path.Combine(Home("CODEX_HOME", ".codex"), "hooks.json"),
                 AgentProvider.Claude => Path.Combine(user, ".claude", "settings.json"),
-                _ => Path.Combine(user, ".kiro", "hooks", "sidepulse-net.json")
+                AgentProvider.Kiro => Path.Combine(user, ".kiro", "hooks", "sidepulse-net.json"),
+                AgentProvider.OpenCode => Path.Combine(Environment.GetEnvironmentVariable("OPENCODE_CONFIG_DIR") is { Length: > 0 } config ? config : Path.Combine(Home("XDG_CONFIG_HOME", ".config"), "opencode"), "plugins", "sidepulse-net.js"),
+                _ => throw new ArgumentException("Unknown agent.")
             };
         }
     }
