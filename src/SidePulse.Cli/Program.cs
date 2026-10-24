@@ -80,7 +80,7 @@ app.Configure(config =>
     });
     config.AddBranch("agents", agents =>
     {
-        agents.SetDescription("Set up Copilot, Codex, Claude Code and Kiro lifecycle hooks.");
+        agents.SetDescription("Set up Copilot, Codex, Claude Code, Kiro and OpenCode lifecycle integrations.");
         agents.AddCommand<AgentsListCommand>("list");
         agents.AddCommand<AgentInstallCommand>("install");
         agents.AddCommand<AgentStatusCommand>("status");

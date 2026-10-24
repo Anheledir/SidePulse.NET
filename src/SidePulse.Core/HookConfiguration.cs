@@ -23,6 +23,7 @@ public static class HookConfiguration
     }
     public static JsonObject Generate(AgentProvider provider, string exe, bool windows)
     {
+        if (provider == AgentProvider.OpenCode) return new JsonObject { ["plugin"] = OpenCodePlugin.Generate(exe) };
         var events = AgentEvents.Capabilities.Single(c => c.Provider == provider).Events;
         var hooks = new JsonObject();
         var kiro = new JsonArray();
@@ -61,7 +62,7 @@ public static class HookConfiguration
     }
     public static JsonObject Merge(AgentProvider provider, JsonObject? existing, JsonObject generated)
     {
-        if (provider is AgentProvider.Copilot or AgentProvider.Kiro)
+        if (provider is AgentProvider.Copilot or AgentProvider.Kiro or AgentProvider.OpenCode)
         {
             if (existing is not null) throw new IOException("The dedicated hook file already exists and is not owned by this installation.");
             return generated;
