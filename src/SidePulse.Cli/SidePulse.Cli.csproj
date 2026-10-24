@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>sidepulse-net</AssemblyName>
-    <Version>0.1.0-alpha.6</Version>
+    <AssemblyName>spn</AssemblyName>
+    <Version>0.1.0-beta.1</Version>
     <Description>Unofficial SidePulse companion</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
@@ -20,5 +20,6 @@
     <Content Include="../../docs/wiki/Updating.md" Link="docs/Updating.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../docs/wiki/Animations.md" Link="docs/Animations.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../docs/wiki/Scripting-and-Menus.md" Link="docs/Scripting-and-Menus.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../docs/releases/0.1.0-beta.1.md" Link="docs/Beta.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

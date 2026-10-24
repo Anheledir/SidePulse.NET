@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
+using SidePulse.Core;
 using Spectre.Console;
 
 namespace SidePulse.Cli;
@@ -38,7 +40,12 @@ public static class TerminalMode
         else Console.Error.WriteLine("Error: " + exception.Message);
         return 1;
     }
-    public static string Quote(string value, string shell) => value.IndexOfAny(['\r', '\n']) >= 0 ? throw new ArgumentException("Multiline values cannot be exported as a single-line command. Use a file instead.") : shell switch
+    public static string Quote(string value, string shell)
+    {
+        if (value.IndexOfAny(['\r', '\n', '\0']) >= 0) throw new ArgumentException("Multiline or NUL values cannot be exported as a single-line command. Use a file instead.");
+        if (shell is not ("powershell" or "bash" or "cmd")) throw new ArgumentException("Choose powershell, bash or cmd.");
+        if (Regex.IsMatch(value, @"\A[A-Za-z0-9_./:-]+\z", RegexOptions.CultureInvariant)) return value;
+        return shell switch
     {
         "powershell" => "'" + value.Replace("'", "''") + "'",
         "bash" => "'" + value.Replace("'", "'\"'\"'") + "'",
@@ -46,12 +53,33 @@ public static class TerminalMode
         "cmd" when value.IndexOfAny(['%', '!', '"', '\r', '\n']) >= 0 => throw new ArgumentException("This value cannot safely be exported for CMD. Choose PowerShell instead."),
         "cmd" => "\"" + value.TrimEnd('\\') + new string('\\', 2 * (value.Length - value.TrimEnd('\\').Length)) + "\"",
         _ => throw new ArgumentException("Choose powershell, bash or cmd.")
-    };
-    public static string Command(IEnumerable<string> args, string? shell = null)
+        };
+    }
+    public static string Command(IEnumerable<string> args, string? shell = null, string? executable = null)
     {
         shell ??= Shell;
+        executable ??= Invocation();
+        var invocation = Quote(executable, shell);
+        if (shell == "powershell" && invocation.StartsWith('\'')) invocation = "& " + invocation;
         var values = args.Select(a => Quote(a, shell));
-        return "sidepulse-net " + string.Join(' ', values);
+        return invocation + " " + string.Join(' ', values);
+    }
+    private static string Invocation()
+    {
+        var process = Environment.ProcessPath;
+        if (process is null || !Path.GetFileName(process).Equals(ApplicationIdentity.CurrentExecutable, StringComparison.OrdinalIgnoreCase)) return ApplicationIdentity.Command;
+        foreach (var entry in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
+        {
+            if (string.IsNullOrWhiteSpace(entry)) continue;
+            try
+            {
+                var candidate = Path.GetFullPath(Path.Combine(entry, ApplicationIdentity.CurrentExecutable));
+                if (!File.Exists(candidate)) continue;
+                return candidate.Equals(process, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) ? ApplicationIdentity.Command : process;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException) { }
+        }
+        return process;
     }
     public static void Footer(IEnumerable<string> args, string? shell = null) => AnsiConsole.Write(new Panel(new Text(Command(args, shell))).Header("Script command").Border(BoxBorder.Rounded));
     public static bool Copy(string text)

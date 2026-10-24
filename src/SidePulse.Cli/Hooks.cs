@@ -228,8 +228,8 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
 public sealed class HookConfigSettings : CommandSettings
 {
     [CommandOption("--exe <PATH>")]
-    [Description("Absolute path to a published sidepulse-net executable.")]
-    public string Executable { get; init; } = Environment.ProcessPath ?? "sidepulse-net";
+    [Description("Absolute path to a published spn executable.")]
+    public string Executable { get; init; } = Environment.ProcessPath ?? ApplicationIdentity.Command;
     [CommandOption("--output <PATH>")]
     [Description("Create a NEW hook file. Existing files are never overwritten. Otherwise prints JSON.")]
     public string? OutputPath { get; init; }

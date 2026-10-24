@@ -2,13 +2,17 @@
 > and Copilot are now implemented. See [[Host-Management]] and [[Agent-Integrations]].
 > The manual Copilot hook generation below remains available for existing users.
 
-# Getting started with the implementation preview
+# Getting started with the beta candidate
 
-The first implementation is an alpha preview. USB discovery/writes, status profiles,
-raw programs, silent iPhone bridge delivery with an existing APNS token, session
-aggregation, QR pairing, native protected phone links, diagnostics and a foreground
-Copilot CLI host are implemented. Background-service installation, full LED grammar validation,
-animation rendering, migration and remaining agent integrations remain planned.
+The executable is `spn` (`spn.exe` on Windows). Extract the complete platform
+archive into a permanent user-owned directory. Run `.\spn.exe` in PowerShell or
+`./spn` on Unix unless that directory is on PATH. The beta release notes include
+the manual alpha migration; no old-name alias is distributed.
+
+USB/SD writes, iPhone pairing/protected links, shared agent host, animation studio,
+managed integrations and a persistent interactive session are implemented.
+Automatic per-user installation/PATH setup, saved UI preferences, remaining
+upstream integrations and physical firmware acceptance remain open.
 
 ## Build and run
 
@@ -27,8 +31,8 @@ Publish a Windows application without a Python or .NET runtime requirement:
 dotnet publish src/SidePulse.Cli -c Release -r win-x64 --self-contained true -o artifacts/win-x64
 ```
 
-Run `artifacts/win-x64/sidepulse-net.exe`. For macOS or Linux, replace `win-x64`
-with the desired runtime identifier and run `./sidepulse-net`. CI publishes
+Run `artifacts/win-x64/spn.exe`. For macOS or Linux, replace `win-x64`
+with the desired runtime identifier and run `./spn`. CI publishes
 archives for `win-x64`, `win-arm64`, `osx-x64`, `osx-arm64`, `linux-x64` and
 `linux-arm64`. Windows archives use ZIP; Unix archives use tar.gz to retain
 executable permissions. Extract the inner archive after downloading the Actions
@@ -38,9 +42,9 @@ These are unsigned preview builds, not installers or stable releases.
 ## USB device
 
 ```powershell
-sidepulse-net devices --json
-sidepulse-net state working --device E:\
-sidepulse-net write 'off\n#ff9900 1.6s pulse\nrepeat' --escapes --device E:\
+spn devices --json
+spn state working --device E:\
+spn write 'off\n#ff9900 1.6s pulse\nrepeat' --escapes --device E:\
 ```
 
 An explicit directory must contain `LEDS.LED`; the tool will not create device files
@@ -52,10 +56,10 @@ the firmware remains responsible for LED syntax validation.
 ## Pair an iPhone
 
 ```powershell
-sidepulse-net link pair iphone
-sidepulse-net link list
-sidepulse-net state done --phone iphone
-sidepulse-net host --phone default
+spn link pair iphone
+spn link list
+spn state done --phone iphone
+spn host --phone default
 ```
 
 Scan the terminal QR using the SidePulse app's pairing flow. The pairing URI is
@@ -88,18 +92,18 @@ can use environment-token delivery without saved links. See [[Platforms]].
 The first linked phone becomes the default. Without target options, state, write,
 animation apply and host delivery use exactly one mounted USB device; if none is
 found, they use the saved default phone (or the only saved phone). For example,
-`sidepulse-net state working` works with a paired default phone and no USB device.
+`spn state working` works with a paired default phone and no USB device.
 Multiple mounted devices require an explicit target. Multiple phones without a
 default require `--phone` or `link default <alias>`. Explicit `--device`, `--phone`
 and `--token-env` always take precedence. A failed selection, credential read or
 delivery never retries on a different output.
 
 ```powershell
-sidepulse-net link rename iphone personal
-sidepulse-net link default personal
-sidepulse-net link list --json
-sidepulse-net link remove personal
-sidepulse-net doctor --json
+spn link rename iphone personal
+spn link default personal
+spn link list --json
+spn link remove personal
+spn doctor --json
 ```
 
 Aliases are case-insensitive and use 1–40 letters, digits, underscores or hyphens.
@@ -118,9 +122,9 @@ environment. Keep the value out of command history, source control and screensho
 Save it securely using the native credential vault, or use it directly without persistence:
 
 ```powershell
-sidepulse-net link import iphone --token-env SIDEPULSE_TOKEN
-sidepulse-net state working --token-env SIDEPULSE_TOKEN
-sidepulse-net host --token-env SIDEPULSE_TOKEN
+spn link import iphone --token-env SIDEPULSE_TOKEN
+spn state working --token-env SIDEPULSE_TOKEN
+spn host --token-env SIDEPULSE_TOKEN
 ```
 
 Saved links and pairing are available on Windows, macOS and Linux when the native
@@ -139,22 +143,22 @@ upstream protocol at the revision in `upstream.json`.
 Start the host in a terminal, choosing either USB or the phone environment token:
 
 ```powershell
-sidepulse-net host --device E:\
+spn host --device E:\
 ```
 
 Create the hook directory if needed, then generate a new, separate hook file:
 
 ```powershell
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.copilot\hooks" | Out-Null
-sidepulse-net hook-config --exe C:\Tools\SidePulse.NET\sidepulse-net.exe --output "$env:USERPROFILE\.copilot\hooks\sidepulse-net.json"
+spn hook-config --exe C:\Tools\SidePulse.NET\spn.exe --output "$env:USERPROFILE\.copilot\hooks\sidepulse-net.json"
 ```
 
 On macOS/Linux, use:
 
 ```bash
 mkdir -p ~/.copilot/hooks
-sidepulse-net hook-config --exe /absolute/path/to/sidepulse-net --output ~/.copilot/hooks/sidepulse-net.json
-sidepulse-net host --phone default
+spn hook-config --exe /absolute/path/to/spn --output ~/.copilot/hooks/sidepulse-net.json
+spn host --phone default
 ```
 
 Generated files include both Bash and PowerShell wrappers. Bash inherits JSON

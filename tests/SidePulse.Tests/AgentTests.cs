@@ -51,7 +51,7 @@ public sealed class AgentTests
     {
         foreach (var provider in Enum.GetValues<AgentProvider>())
         {
-            var generated = HookConfiguration.Generate(provider, "/tmp/O'Brien test/sidepulse-net", false);
+            var generated = HookConfiguration.Generate(provider, "/tmp/O'Brien test/spn", false);
             var json = generated.ToJsonString();
             Assert.DoesNotContain("permissionDecision", json);
             Assert.DoesNotContain("dangerously", json);
@@ -66,7 +66,7 @@ public sealed class AgentTests
                 Assert.NotEmpty(generated["hooks"]!.AsArray());
             }
             else Assert.NotEmpty(generated["hooks"]!.AsObject());
-            var windows = HookConfiguration.Generate(provider, @"C:\Tools\test\sidepulse-net.exe", true).ToJsonString();
+            var windows = HookConfiguration.Generate(provider, @"C:\Tools\test\spn.exe", true).ToJsonString();
             if (provider != AgentProvider.Copilot) Assert.Contains("EncodedCommand", windows);
         }
     }
@@ -79,7 +79,7 @@ public sealed class AgentTests
             var original = "{\n  \"permissions\": {\"allow\": [\"Read\"]},\n  \"hooks\": {\"Stop\": [{\"hooks\": [{\"type\":\"command\",\"command\":\"my-script\"}]}]}\n}\n";
             File.WriteAllText(target, original);
             var installer = new HookInstallation(Path.Combine(directory, "manifests"));
-            var fragment = HookConfiguration.Generate(AgentProvider.Claude, "/tmp/sidepulse-net", false);
+            var fragment = HookConfiguration.Generate(AgentProvider.Claude, "/tmp/spn", false);
             Assert.Equal("preview", installer.Install(target, AgentProvider.Claude, fragment, true).State);
             Assert.Equal(original, File.ReadAllText(target));
             Assert.False(Directory.Exists(Path.Combine(directory, "manifests")));
@@ -103,9 +103,9 @@ public sealed class AgentTests
         {
             var target = Path.Combine(directory, "hooks.json");
             var installer = new HookInstallation(Path.Combine(directory, "manifests"));
-            installer.Install(target, provider, HookConfiguration.Generate(provider, "/old/sidepulse-net", false), false);
+            installer.Install(target, provider, HookConfiguration.Generate(provider, "/old/spn", false), false);
             var before = File.ReadAllBytes(target);
-            var error = Assert.Throws<IOException>(() => installer.Install(target, provider, HookConfiguration.Generate(provider, "/new/sidepulse-net", false), false));
+            var error = Assert.Throws<IOException>(() => installer.Install(target, provider, HookConfiguration.Generate(provider, "/new/spn", false), false));
             Assert.Contains("Uninstall", error.Message);
             Assert.Equal(before, File.ReadAllBytes(target));
         });
@@ -117,11 +117,11 @@ public sealed class AgentTests
         {
             var target = Path.Combine(directory, "hooks.json");
             var installer = new HookInstallation(Path.Combine(directory, "manifests"));
-            installer.Install(target, AgentProvider.Codex, HookConfiguration.Generate(AgentProvider.Codex, "/tmp/sidepulse-net", false), false);
+            installer.Install(target, AgentProvider.Codex, HookConfiguration.Generate(AgentProvider.Codex, "/tmp/spn", false), false);
             var before = File.ReadAllBytes(target);
-            File.Delete(target + ".sidepulse-net.lock");
+            File.Delete(target + ".spn.lock");
             Assert.Equal("preview-remove", installer.Uninstall(target, true).State);
-            Assert.False(File.Exists(target + ".sidepulse-net.lock"));
+            Assert.False(File.Exists(target + ".spn.lock"));
             Assert.Equal(before, File.ReadAllBytes(target));
             Assert.Equal("installed", installer.Status(target).State);
         });
@@ -133,7 +133,7 @@ public sealed class AgentTests
         {
             var target = Path.Combine(directory, "hooks.json");
             var installer = new HookInstallation(Path.Combine(directory, "manifests"));
-            installer.Install(target, AgentProvider.Codex, HookConfiguration.Generate(AgentProvider.Codex, "/tmp/sidepulse-net", false), false);
+            installer.Install(target, AgentProvider.Codex, HookConfiguration.Generate(AgentProvider.Codex, "/tmp/spn", false), false);
             File.AppendAllText(target, " ");
             Assert.Equal("modified", installer.Status(target).State);
             Assert.Throws<IOException>(() => installer.Uninstall(target, false));
@@ -150,7 +150,7 @@ public sealed class AgentTests
         {
             var target = Path.Combine(directory, "sidepulse-net.json");
             var installer = new HookInstallation(Path.Combine(directory, "manifests"));
-            var fragment = HookConfiguration.Generate(AgentProvider.Kiro, "/tmp/sidepulse-net", false);
+            var fragment = HookConfiguration.Generate(AgentProvider.Kiro, "/tmp/spn", false);
             installer.Install(target, AgentProvider.Kiro, fragment, false);
             installer.Uninstall(target, false);
             Assert.False(File.Exists(target));
@@ -183,13 +183,13 @@ public sealed class AgentTests
         {
             var target = Path.Combine(directory, "sidepulse-net.js");
             var installer = new HookInstallation(Path.Combine(directory, "manifests"));
-            var generated = HookConfiguration.Generate(AgentProvider.OpenCode, "C:\\O'Brien ü\\sidepulse-net.exe", true);
+            var generated = HookConfiguration.Generate(AgentProvider.OpenCode, "C:\\O'Brien ü\\spn.exe", true);
             Assert.Equal("preview", installer.Install(target, AgentProvider.OpenCode, generated, true).State);
             Assert.False(File.Exists(target));
             installer.Install(target, AgentProvider.OpenCode, generated, false);
             Assert.Equal(generated["plugin"]!.GetValue<string>(), File.ReadAllText(target));
             Assert.Equal("installed", installer.Install(target, AgentProvider.OpenCode, generated, false).State);
-            Assert.Throws<IOException>(() => installer.Install(target, AgentProvider.OpenCode, HookConfiguration.Generate(AgentProvider.OpenCode, "/new/sidepulse-net", false), false));
+            Assert.Throws<IOException>(() => installer.Install(target, AgentProvider.OpenCode, HookConfiguration.Generate(AgentProvider.OpenCode, "/new/spn", false), false));
             File.AppendAllText(target, "// manual edit");
             Assert.Throws<IOException>(() => installer.Uninstall(target, false));
             File.WriteAllText(target, generated["plugin"]!.GetValue<string>());

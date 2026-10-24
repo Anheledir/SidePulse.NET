@@ -105,19 +105,19 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
-      "sidepulse-net": {
+      "sidepulse.core": {
+        "type": "Project",
+        "dependencies": {
+          "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
+        }
+      },
+      "spn": {
         "type": "Project",
         "dependencies": {
           "QRCoder": "[1.8.1, )",
           "SidePulse.Core": "[1.0.0, )",
           "Spectre.Console": "[0.57.2, )",
           "Spectre.Console.Cli": "[0.57.2, )"
-        }
-      },
-      "sidepulse.core": {
-        "type": "Project",
-        "dependencies": {
-          "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
         }
       },
       "QRCoder": {

@@ -1,4 +1,4 @@
-name: Release
+name: Prepare release
 on:
   push:
     tags: ['v*']
@@ -11,25 +11,36 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Require a version tag matching the application
+      - name: Validate release version and notes
+        id: version
         env:
           RELEASE_REF: ${{ github.ref }}
+          RELEASE_EVENT: ${{ github.event_name }}
         run: |
           python3 - <<'PY'
-          import os, re, xml.etree.ElementTree as ET
+          import os, re, pathlib, xml.etree.ElementTree as ET
           version = ET.parse('src/SidePulse.Cli/SidePulse.Cli.csproj').findtext('./PropertyGroup/Version')
-          if os.environ['RELEASE_REF'] != 'refs/tags/v' + version or not re.fullmatch(r'\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?', version):
-              raise SystemExit('Select/push a vVERSION tag matching the project version; build metadata is not used for release tags.')
+          if not re.fullmatch(r'\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?', version):
+              raise SystemExit('Invalid project release version.')
+          expected = 'refs/heads/main' if os.environ['RELEASE_EVENT'] == 'workflow_dispatch' else 'refs/tags/v' + version
+          if os.environ['RELEASE_REF'] != expected:
+              raise SystemExit('Dispatch on main, or push a matching vVERSION tag.')
+          if not pathlib.Path('docs/releases/' + version + '.md').is_file():
+              raise SystemExit('Versioned release notes are required.')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('version=' + version + '\n')
           PY
   build:
     needs: validate
     uses: ./.github/workflows/dotnet-ci.yml
-  publish:
-    needs: build
+  draft:
+    needs: [validate, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -44,17 +55,20 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_RUN: ${{ github.run_id }}
         run: |
-          gh run download "$RELEASE_RUN" --pattern 'sidepulse-net-*-preview' --dir release-input
+          gh run download "$RELEASE_RUN" --pattern 'spn-*-preview' --dir release-input
           mkdir release-files
           find release-input -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec cp -n {} release-files/ \;
           python3 scripts/release_checksums.py release-files
-      - name: Upload all assets before making the release visible
+          python3 scripts/verify_release.py release-files '${{ needs.validate.outputs.version }}'
+      - name: Create an unpublished release draft
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
         run: |
           flags=()
+          RELEASE_TAG="v$RELEASE_VERSION"
           if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" --verify-tag --draft --title "SidePulse.NET ${RELEASE_TAG#v}" --generate-notes "${flags[@]}" release-files/*
-          gh release edit "$RELEASE_TAG" --draft=false "${flags[@]}"
+          gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" --draft --title "SidePulse.NET $RELEASE_VERSION" --notes-file "docs/releases/$RELEASE_VERSION.md" "${flags[@]}" release-files/*
+          echo "Release draft prepared. Review downloads, notes and acceptance before publishing." >> "$GITHUB_STEP_SUMMARY"
