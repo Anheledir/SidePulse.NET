@@ -2,15 +2,17 @@ using System.Text.Json;
 
 namespace SidePulse.Core;
 
-public sealed record SessionEvent(string SessionId, AgentState State, long Timestamp, AgentProvider Provider = AgentProvider.Copilot);
+public sealed record SessionEvent(string SessionId, AgentState State, long Timestamp, AgentProvider Provider = AgentProvider.Copilot, int ProtocolVersion = 1);
 public sealed record SessionView(string Id, AgentState State, long Timestamp, AgentProvider Provider = AgentProvider.Copilot);
 
 public sealed class Sessions
 {
     private readonly Dictionary<string, SessionView> sessions = new();
     public IReadOnlyList<SessionView> Snapshot => sessions.Values.OrderBy(s => s.Id).ToArray();
+    public void Clear() => sessions.Clear();
     public bool Apply(SessionEvent item)
     {
+        if (item.ProtocolVersion != 1) return false;
         if (string.IsNullOrWhiteSpace(item.SessionId) || item.SessionId.Length > 256 || item.Timestamp < 0) return false;
         if (!Enum.IsDefined(item.Provider) || !Enum.IsDefined(item.State)) return false;
         var key = item.Provider + ":" + item.SessionId;

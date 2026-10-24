@@ -100,6 +100,9 @@ def main():
                 time.sleep(0.1)
             assert status()['State'] == 'Done'
             assert 'DO-NOT-LOG-THIS' not in run('host', 'logs', '--tail', '10')
+            cleared = json.loads(run('host', 'reset', '--json'))
+            assert cleared['ProtocolVersion'] == 1 and cleared['State'] == 'Unknown' and not cleared['Sessions'], cleared
+            assert not status()['Sessions']
             run('host', 'stop', '--json')
             started = False
             assert not status()['Running']

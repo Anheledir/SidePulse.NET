@@ -73,6 +73,7 @@ app.Configure(config =>
         host.SetDescription("Manage the shared agent host.");
         host.AddCommand<HostCommand>("run").WithDescription("Run in the foreground.");
         host.AddCommand<HostStartCommand>("start").WithDescription("Start a detached host with bounded local logs.");
+        host.AddCommand<HostResetCommand>("reset").WithDescription("Clear stale sessions without inventing completion.");
         host.AddCommand<HostStatusCommand>("status").WithDescription("Query the running host and agent sessions.");
         host.AddCommand<HostStopCommand>("stop").WithDescription("Request graceful shutdown over current-user IPC.");
         host.AddCommand<HostLogsCommand>("logs").WithDescription("Show recent background host log lines.");

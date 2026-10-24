@@ -50,3 +50,17 @@ Tests exercise detached start, idempotent start, status snapshots, mixed-provide
 hook delivery and graceful stop. Foreground tests also reject competing hosts
 and verify restart after forced termination. These are simulated device tests,
 not evidence of actual LED or phone receipt.
+
+## Clearing abandoned sessions
+
+`sidepulse-net host reset` clears all tracked sessions and queues the Unknown
+pattern. Use `--json` for a machine-readable snapshot. This explicitly discards
+history; it does not mark tasks successful or stop agent processes. The next agent
+event establishes fresh state. A stopped host returns exit code 1.
+
+IPC messages and host snapshots now carry `ProtocolVersion: 1`. Unknown explicit
+versions are rejected; legacy messages without the field are treated as v1.
+This does not establish compatibility between arbitrary application versions:
+stop the host before upgrades and run matching CLI/host binaries. Restart remains
+Unknown with no restored session history; reset provides explicit recovery from
+abandoned sessions without a timeout inventing successful completion.

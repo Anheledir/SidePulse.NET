@@ -112,7 +112,7 @@ public sealed class UpdateStatusCommand : Command<UpdateSettings>
     public override int Execute(CommandContext context, UpdateSettings settings, CancellationToken cancellationToken)
     {
         var status = UpdateTransaction.Status(Updater.Target);
-        Updater.Print(settings, (object?)status ?? new { state = "none", receipt = UpdateTransaction.ReceiptPath(Updater.Target) }, status is null ? "No recorded update for this installation." : $"{status.State}: {status.Version}\nBackup: {status.Backup}\nWorkspace: {status.Job}" + (status.Error is null ? "" : "\n" + status.Error));
+        Updater.Print(settings, new { state = status?.State ?? "none", version = status?.Version, target = Updater.Target, backup = status?.Backup, workspace = status?.Job, error = status?.Error, receipt = UpdateTransaction.ReceiptPath(Updater.Target) }, status is null ? "No recorded update for this installation." : $"{status.State}: {status.Version}\nBackup: {status.Backup}\nWorkspace: {status.Job}" + (status.Error is null ? "" : "\n" + status.Error));
         return status?.State is "failed" or "recovery-required" ? 1 : 0;
     }
 }

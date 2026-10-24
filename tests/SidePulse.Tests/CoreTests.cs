@@ -8,6 +8,19 @@ namespace SidePulse.Tests;
 public sealed class CoreTests
 {
     [Fact]
+    public void ExplicitResetForgetsErrorsAndAllowsFreshEvents()
+    {
+        var sessions = new Sessions();
+        Assert.False(sessions.Apply(new("future", AgentState.Working, 1, ProtocolVersion: 2)));
+        sessions.Apply(new("old", AgentState.Error, 100));
+        sessions.Clear();
+        Assert.Empty(sessions.Snapshot);
+        Assert.Equal(AgentState.Unknown, sessions.State);
+        Assert.True(sessions.Apply(new("old", AgentState.Working, 1)));
+        Assert.Equal(AgentState.Working, sessions.State);
+    }
+
+    [Fact]
     public void LimitsUseUtf8BytesAndPhysicalLines()
     {
         Assert.Equal(512, new LedProgram(new string('é', 256)).ByteCount);

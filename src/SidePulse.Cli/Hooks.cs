@@ -167,11 +167,18 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                     }
                     if (message.Length > LocalPipe.MaximumMessageBytes) continue;
                     using var request = JsonDocument.Parse(message.ToArray());
+                    if (request.RootElement.TryGetProperty("ProtocolVersion", out var protocol) && (!protocol.TryGetInt32(out var version) || version != 1)) continue;
                     if (request.RootElement.TryGetProperty("Command", out var command))
                     {
                         var action = command.GetString();
-                        if (action is "status" or "stop")
+                        if (action is "status" or "stop" or "reset")
                         {
+                            if (action == "reset")
+                            {
+                                sessions.Clear();
+                                queued = AgentState.Unknown;
+                                outputs.Writer.TryWrite(patterns[AgentState.Unknown]);
+                            }
                             var response = JsonSerializer.SerializeToUtf8Bytes(new HostSnapshot(true, Environment.ProcessId, sessions.State, sessions.Snapshot));
                             await pipe.WriteAsync(response.Concat(new byte[] { 10 }).ToArray(), deadline.Token);
                             await pipe.FlushAsync(deadline.Token);

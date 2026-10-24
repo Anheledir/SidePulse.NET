@@ -9,7 +9,7 @@ using Spectre.Console.Cli;
 
 namespace SidePulse.Cli;
 
-public sealed record HostSnapshot(bool Running, int? ProcessId, AgentState State, IReadOnlyList<SessionView> Sessions);
+public sealed record HostSnapshot(bool Running, int? ProcessId, AgentState State, IReadOnlyList<SessionView> Sessions, int ProtocolVersion = 1);
 public static class HostControl
 {
     public static async Task<HostSnapshot> Request(string command, CancellationToken cancellationToken)
@@ -19,13 +19,15 @@ public static class HostControl
         using var pipe = new NamedPipeClientStream(".", LocalPipe.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         try { await pipe.ConnectAsync(deadline.Token); }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return new(false, null, AgentState.Unknown, []); }
-        await pipe.WriteAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { Command = command }) + "\n"), deadline.Token);
+        await pipe.WriteAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { Command = command, ProtocolVersion = 1 }) + "\n"), deadline.Token);
         await pipe.FlushAsync(deadline.Token);
         using var reader = new StreamReader(pipe, Encoding.UTF8);
         var response = await reader.ReadLineAsync(deadline.Token) ?? throw new IOException("The host closed without a response.");
         await pipe.WriteAsync(new byte[] { 10 }, deadline.Token);
         await pipe.FlushAsync(deadline.Token);
-        return JsonSerializer.Deserialize<HostSnapshot>(response, Output.Json) ?? throw new IOException("Invalid host response.");
+        var snapshot = JsonSerializer.Deserialize<HostSnapshot>(response, Output.Json) ?? throw new IOException("Invalid host response.");
+        if (snapshot.ProtocolVersion != 1) throw new IOException("Host protocol mismatch. Stop the old host and use matching CLI/host versions.");
+        return snapshot;
     }
 }
 public sealed class HostActionSettings : CommandSettings
@@ -109,5 +111,16 @@ public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
             }
         }
         throw new IOException("Host readiness could not be confirmed. Use host status before retrying.");
+    }
+}
+
+public sealed class HostResetCommand : AsyncCommand<HostActionSettings>
+{
+    public override async Task<int> ExecuteAsync(CommandContext context, HostActionSettings settings, CancellationToken cancellationToken)
+    {
+        var result = await HostControl.Request("reset", cancellationToken);
+        if (settings.Json) Output.Print(result);
+        else Console.WriteLine(result.Running ? "Session history cleared; status is Unknown until the next agent event." : "Host is not running.");
+        return result.Running ? 0 : 1;
     }
 }

@@ -70,3 +70,8 @@ self-contained smoke checks, collects all six archives, writes `SHA256SUMS`, upl
 a draft release and only then publishes it. Hyphenated versions are prereleases.
 No release or tag is created simply by adding this workflow to a branch. Existing
 release tags are not overwritten. Review the release notes/assets after publishing.
+
+`update status --json` always exposes the same lower-camel-case fields: `state`,
+`version`, `target`, `backup`, `workspace`, `error`, and `receipt`. Missing values
+are null; no receipt gives state `none`. Scripts should inspect `state` rather
+than infer completion from an install command returning successfully.
