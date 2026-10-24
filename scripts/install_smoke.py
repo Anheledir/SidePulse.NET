@@ -45,7 +45,7 @@ def main(executable):
             assert (result.returncode == 0) == success, (args, result.returncode, result.stdout, result.stderr)
             return result
 
-        run(portable, '--version')
+        expected_version = run(portable, '--version').stdout.strip()
         docs = json.loads(run(portable, 'docs', '--offline', '--json').stdout)
         assert any('Beta.md' in name for name in docs)
         licenses = run(portable, 'about', 'licenses', '--full', '--json').stdout
@@ -77,6 +77,18 @@ def main(executable):
             assert profile.read_text().count('# >>> SidePulse.NET PATH >>>') == 1
             profile.write_bytes(profile.read_bytes() + b'# Added after installation\n')
         shutil.rmtree(download)
+        unrelated = root / 'unrelated working directory'
+        unrelated.mkdir()
+        fresh_env = dict(env)
+        if os.name == 'nt':
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment') as key:
+                machine_path = winreg.QueryValueEx(key, 'Path')[0]
+            fresh_env['PATH'] = os.path.expandvars(machine_path + ';' + user_path()[0])
+            invocation = [os.environ.get('COMSPEC', r'C:\Windows\System32\cmd.exe'), '/d', '/c', 'spn', '--version']
+        else:
+            invocation = ['/bin/bash', '--noprofile', '--rcfile', str(profile), '-i', '-c', 'spn --version']
+        fresh = subprocess.run(invocation, stdin=subprocess.DEVNULL, capture_output=True, text=True, env=fresh_env, cwd=unrelated, timeout=45)
+        assert fresh.returncode == 0 and fresh.stdout.strip() == expected_version, (fresh.returncode, fresh.stdout, fresh.stderr)
         run(installed, '--version')
         assert json.loads(run(installed, 'install', '--status', '--json').stdout)['mode'] == 'installed'
         run(installed, 'state', 'working', '--dry-run', '--json')
