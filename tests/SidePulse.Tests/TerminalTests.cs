@@ -22,8 +22,15 @@ public sealed class TerminalTests
                     UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
                     StandardOutputEncoding = System.Text.Encoding.UTF8
                 };
-                foreach (var argument in shell switch { "powershell" => new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-Command" }, "cmd" => new[] { "/d", "/s", "/c" }, _ => new[] { "-c" } }) start.ArgumentList.Add(argument);
-                start.ArgumentList.Add(TerminalMode.Command(new[] { script }.Concat(values), shell, OperatingSystem.IsWindows() ? "python" : "python3"));
+                var command = TerminalMode.Command(new[] { script }.Concat(values), shell, OperatingSystem.IsWindows() ? "python" : "python3");
+                // cmd consumes one raw command string; CRT argument-list escaping
+                // would add backslashes before its shell quotes and change the command.
+                if (shell == "cmd") start.Arguments = "/d /s /c \"" + command + "\"";
+                else
+                {
+                    foreach (var argument in shell == "powershell" ? new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-Command" } : new[] { "-c" }) start.ArgumentList.Add(argument);
+                    start.ArgumentList.Add(command);
+                }
                 using var process = System.Diagnostics.Process.Start(start)!;
                 var output = process.StandardOutput.ReadToEnd();
                 var errors = process.StandardError.ReadToEnd();

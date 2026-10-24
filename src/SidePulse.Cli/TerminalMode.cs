@@ -23,6 +23,9 @@ public static class TerminalMode
         ColorEnabled = !noColor;
         if (Quiet && !Json) Console.SetOut(TextWriter.Null);
         if (noColor || Quiet) AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Out), Ansi = Console.IsOutputRedirected || Quiet ? AnsiSupport.No : AnsiSupport.Detect, ColorSystem = ColorSystemSupport.NoColors, Enrichment = new ProfileEnrichment { UseDefaultEnrichers = false } });
+        // Use the same actual TTY/flag decision for Spectre prompts and our key loop.
+        // CI markers alone do not make a genuine attached PTY non-interactive.
+        AnsiConsole.Profile.Capabilities.Interactive = Interactive;
         var literal = false;
         var result = args.Where(a => { if (a == "--") literal = true; return literal || a is not "--quiet" and not "--no-interactive" and not "--no-color"; }).ToList();
         // Spectre binds JSON to individual commands; normalize a leading global spelling.
