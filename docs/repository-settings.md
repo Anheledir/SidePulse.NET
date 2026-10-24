@@ -1,68 +1,111 @@
 # Repository configuration record
 
-Reviewed 2026-10-23. [Machine-readable observed and desired values](repository-settings.json).
-This record distinguishes source configuration in PR #12 from effective GitHub
-settings. The implementation has not been merged or released.
+Verified 2026-10-24. [Machine-readable settings and change log](repository-settings.json).
+The implementation is in PR #12 and has not been merged or released.
 
-## Effective settings observed through GitHub
+The GitHub connector excludes administration mutations. The requested admin work
+was completed through the signed-in browser; ruleset creation required fresh
+GitHub verification. Saved values were checked in the UI, metadata through the
+repository API, and the active ruleset through the ruleset API. No PAT was created.
 
-The repository is public, with `main` as its default branch. Issues and Wiki are
-on; Projects is off. Merged branches are deleted automatically. Squash and rebase
-merges are allowed, merge commits and auto-merge are disabled. The description
-still says "Concept stage", homepage is empty, and no topics are set.
+## Changes applied
 
-The authenticated user has an admin role, but the connected GitHub App excludes
-repository administration. Branch-protection reads returned 403; security feature
-states were not exposed. These controls are **unknown**, not disabled. No remote
-admin settings have been changed in this review.
+| Setting | Effective value |
+|---|---|
+| Description | Unofficial cross-platform SidePulse companion in C# and Spectre.Console: agent status hooks, LED patterns, iPhone pairing and verified updates. |
+| Homepage | Project wiki |
+| Topics | sidepulse, dotnet, csharp, spectre-console, cli, cross-platform, github-copilot, codex, claude-code, kiro, led |
+| Projects | Enabled; delivery board created and linked |
+| Dependency malware alerts | Enabled |
+| Actions sources | Owner and GitHub-created actions only; no broad Marketplace allowance |
+| Actions revision policy | Full commit SHA required |
+| External fork workflows | Approval required for all external contributors |
+| Main protection | Active ruleset 25761788, described below |
 
-## Source configuration
+## Verified existing controls
 
-- Weekly Dependabot updates for NuGet and Actions already exist.
-- Security workflow adds C#, Python and Actions CodeQL analysis on PRs, main
-  pushes and weekly schedule. C# uses an explicit .NET 10 build. Analysis needs
-  repository code-scanning availability and a successful Actions run.
-- PR dependency review fails on newly introduced high/critical advisories.
-  It does not replace checking existing dependencies or advisory triage.
-- All third-party Actions are pinned. Default permissions are `contents: read`;
-  only jobs that need publication or SARIF upload receive write permissions.
-- Final reviewed code `f1ada51` passed 104 tests per OS in
-  [native CI](https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767890),
-  including updater replacement/rollback. Quality and dependency review passed.
-  [All three CodeQL analyses and the combined alert check](https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767819)
-  passed after canonical containment hardening. The combined result reports no new
-  alerts. No rule was suppressed or alert dismissed. Exact check names are in JSON.
-- SECURITY.md supplies reporting guidance and documents updater/IPC trust limits.
-- Wiki publishing and upstream review run only from the default branch.
+Private vulnerability reporting, dependency graph, Dependabot alerts/security
+updates and grouped security updates were already on. Secret scanning and push
+protection were already on. Releases were already immutable. Wiki editing was
+already restricted to collaborators. Actions default token access was already
+read-only, and Actions creation/approval of pull requests was disabled.
 
-## Admin changes to apply and verify
+CodeQL uses advanced setup. Its combined check fails for high-or-higher security
+alerts and standard errors. Optional AI Scan and credit-consuming agentic autofix
+remain off; existing Copilot Autofix is on. Automatic dependency submission is off.
 
-Use the description, homepage and topics in the JSON record. Enable repository
-Projects if a board is wanted. A repository feature switch does not create a
-GitHub Projects board: create **SidePulse.NET delivery**, with description
-"Cross-platform SidePulse.NET delivery, compatibility evidence and release gates",
-and Todo, In progress, Validation and Done statuses; add #1 through #11 and PR #12.
-Keep unfinished hardware and provider validation in Validation, not Done.
+The repository remains public, `main` remains default, squash/rebase merges are
+allowed, merge commits and auto-merge are off, and merged branches are deleted.
+Existing web-commit signoff remains on. General log/artifact retention is 90 days;
+preview packages request 14 days in the workflow. Cache retention/size remain
+7 days/10 GB. No account, ownership or collaborator permissions were changed.
 
-Enable private vulnerability reporting, Dependabot alerts/security updates,
-secret scanning and push protection where available. Check Actions defaults are
-read-only and workflow PR approval is off. Retain existing merge choices.
+## Main delivery checks
 
-Protect main with PRs, resolved conversations, current checks, and blocked branch
-force-push/deletion. For this personal repository use zero required approvals so
-the sole maintainer is not locked out by GitHub's self-approval restriction.
-Require exact successful check contexts only after they have run: documentation,
-all three native build jobs, CodeQL for C#/Python/Actions, the combined `CodeQL`
-alert check, and dependency review. Analysis-job success alone does not imply no
-security alerts; require the combined alert check as well.
-Do not invent check names or enforce checks that have never completed.
+[Active ruleset](https://github.com/Anheledir/SidePulse.NET/settings/rules/25761788)
+targets the default branch, currently `main`, with an empty bypass list:
 
-Record each applied change, observed value and date here and in JSON. If an option
-is unavailable, record the actual GitHub limitation rather than claiming success.
-Do not create a long-lived PAT merely to work around the connector's admin scope.
+- Require a pull request, resolved conversations and an up-to-date tested branch.
+- Block branch deletion and force pushes.
+- Require `documentation`, `build (windows-latest)`, `build (ubuntu-latest)`,
+  `build (macos-latest)`, `CodeQL (csharp)`, `CodeQL (python)`, `CodeQL (actions)`,
+  `Dependency review`, and the combined `CodeQL` alert check.
+- Bind the combined alert check to GitHub Advanced Security (integration 57789)
+  and the eight workflow checks to GitHub Actions (integration 15368).
+- Require zero approvals for this solo-maintainer project. GitHub prevents
+  self-approval; the PR/check/conversation requirements still apply.
 
-## Reference
+The existing **Main** ruleset 25757011 was disabled. It remains untouched and
+disabled. Its signed-commit/code-quality/Copilot requirements were not silently
+activated. The new rule requires the observed combined CodeQL check rather than
+requiring scanning results on both the implementation and the unscanned default
+branch, which would block the first implementation merge.
 
-- [GitHub security and analysis settings](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-security-and-analysis-settings-for-your-repository)
+Future branch-policy changes should preserve the distinction between scan-job
+completion and a clean alert result. Required check names were observed in
+successful runs, not invented. Repository merge settings still exclude merge
+commits even though the ruleset's allowed-method intersection includes them.
+
+## Delivery project
+
+[SidePulse.NET delivery](https://github.com/users/Anheledir/projects/5/views/1)
+is a private owner project linked to this public repository. It has a Delivery
+board, short description and README explaining scope, status meanings, validation
+requirements and attribution. It imports open issues and PRs from this repository.
+
+| Column | Items at verification |
+|---|---|
+| Todo | #11 |
+| In Progress | #5, #7, #8, #9 |
+| Validation | #2, #3, #4, #6, #10, PR #12 |
+| Done | #1, concept approval only |
+
+All eleven issues and PR #12 are represented. Incomplete implementation and
+physical/provider/release acceptance remain visible instead of marking them done.
+The board remains private; repository visibility was not changed.
+
+## Source configuration and evidence
+
+Weekly Dependabot updates for NuGet and Actions already exist. PR #12 adds
+SECURITY.md, C#/Python/Actions CodeQL on PRs/main/weekly schedule, and PR dependency
+review rejecting new high/critical advisories. Third-party Actions are pinned;
+workflow permissions are read-only by default with scoped publication/scanning
+exceptions. Wiki/upstream publishing runs only from the default branch.
+
+Reviewed code `f1ada51` passed **104 tests per OS** in
+[native CI](https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767890),
+including updater replacement and rollback. Quality and dependency review passed.
+[Security analysis](https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767819)
+passed all three languages; the combined CodeQL check reports no new alerts after
+canonical containment hardening. No rule was suppressed or alert dismissed.
+
+The audit/settings commits change documentation only. Check the PR head's required
+checks before merging. Source documentation/wiki/security-policy changes become
+default-branch documentation only after merge. Runtime/hardware/provider release
+gates remain in the issues and [QA review](reviews/pr-12.md).
+
+## References
+
+- [GitHub security settings](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-security-and-analysis-settings-for-your-repository)
 - [CodeQL manual builds](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/codeql-for-compiled-languages)
 - [Dependency review action](https://github.com/actions/dependency-review-action)

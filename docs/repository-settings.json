@@ -1,21 +1,55 @@
 {
   "repository": "Anheledir/SidePulse.NET",
-  "reviewedOn": "2026-10-23",
+  "reviewedOn": "2026-10-24",
   "implementationPullRequest": 12,
   "observed": {
     "visibility": "public",
     "defaultBranch": "main",
-    "description": "Unofficial .NET companion for SidePulse with a Spectre.Console terminal UI. Concept stage.",
-    "homepage": null,
-    "topics": [],
+    "description": "Unofficial cross-platform SidePulse companion in C# and Spectre.Console: agent status hooks, LED patterns, iPhone pairing and verified updates.",
+    "homepage": "https://github.com/Anheledir/SidePulse.NET/wiki",
+    "topics": [
+      "sidepulse",
+      "dotnet",
+      "csharp",
+      "spectre-console",
+      "cli",
+      "cross-platform",
+      "github-copilot",
+      "codex",
+      "claude-code",
+      "kiro",
+      "led"
+    ],
     "hasIssues": true,
     "hasWiki": true,
-    "hasProjects": false,
+    "hasProjects": true,
     "deleteBranchOnMerge": true,
     "allowMergeCommit": false,
     "allowSquashMerge": true,
     "allowRebaseMerge": true,
-    "allowAutoMerge": false
+    "allowAutoMerge": false,
+    "privateVulnerabilityReporting": true,
+    "dependencyGraph": true,
+    "dependabotAlerts": true,
+    "dependabotSecurityUpdates": true,
+    "groupedSecurityUpdates": true,
+    "malwareAlerts": true,
+    "secretScanning": true,
+    "secretScanningPushProtection": true,
+    "codeQLSetup": "advanced",
+    "codeScanningSecurityFailureThreshold": "high or higher",
+    "codeScanningStandardFailureThreshold": "errors",
+    "releaseImmutability": true,
+    "wikiCollaboratorsOnly": true,
+    "webCommitSignoff": true,
+    "actionsDefaultTokenPermissions": "read",
+    "actionsCanCreateAndApprovePullRequests": false,
+    "actionsAllowedSources": "Owner and GitHub-created actions only; Marketplace creators not broadly allowed; no extra allowlist.",
+    "actionsRequireFullCommitSHA": true,
+    "forkWorkflowApproval": "all external contributors",
+    "retentionDays": 90,
+    "cacheRetentionDays": 7,
+    "cacheSizeGB": 10
   },
   "desired": {
     "description": "Unofficial cross-platform SidePulse companion in C# and Spectre.Console: agent status hooks, LED patterns, iPhone pairing and verified updates.",
@@ -63,11 +97,10 @@
     }
   },
   "verificationLimits": {
-    "repositoryAdministration": "Connector has no repository settings mutation tools.",
-    "branchProtection": "GET returned 403 Resource not accessible by integration; unknown, not assumed disabled.",
-    "securityAndAnalysis": "Not exposed by repository response; unknown, not assumed disabled.",
-    "projects": "Repository Projects feature observed disabled. No project board has been created.",
-    "appliedRemoteSettings": []
+    "repositoryAdministration": "The connector lacks admin mutations. Requested settings were applied in the signed-in browser, with fresh GitHub verification for ruleset creation.",
+    "branchProtection": "Classic branch-protection GET still excluded by integration; active ruleset verified in UI and GET /rulesets/25761788.",
+    "securityAndAnalysis": "Effective settings verified in browser rather than inferred from the limited repository response.",
+    "unperformed": "No merge, release, tag, real hardware or real provider acceptance performed."
   },
   "verifiedPullRequestChecks": {
     "commit": "f1ada51a836a91e2420e507ac589e195b9990ab5",
@@ -88,5 +121,156 @@
       "CodeQL"
     ],
     "securityRun": "https://github.com/Anheledir/SidePulse.NET/actions/runs/40039767819"
+  },
+  "initialObserved": {
+    "visibility": "public",
+    "defaultBranch": "main",
+    "description": "Unofficial .NET companion for SidePulse with a Spectre.Console terminal UI. Concept stage.",
+    "homepage": null,
+    "topics": [],
+    "hasIssues": true,
+    "hasWiki": true,
+    "hasProjects": false,
+    "deleteBranchOnMerge": true,
+    "allowMergeCommit": false,
+    "allowSquashMerge": true,
+    "allowRebaseMerge": true,
+    "allowAutoMerge": false
+  },
+  "initialObservedOn": "2026-10-23",
+  "appliedRemoteChanges": [
+    {
+      "setting": "Repository description, homepage and topics",
+      "result": "Saved and verified with UI plus repository API"
+    },
+    {
+      "setting": "Projects feature",
+      "result": "Enabled"
+    },
+    {
+      "setting": "Dependency malware alerts",
+      "result": "Enabled and saved"
+    },
+    {
+      "setting": "Actions source policy",
+      "result": "Restricted to owner and GitHub-created actions; full commit SHA required"
+    },
+    {
+      "setting": "Fork workflow approval",
+      "result": "Required for all external contributors"
+    },
+    {
+      "setting": "Main delivery checks ruleset",
+      "result": "Created active, ID 25761788, default branch main, no bypass actors, zero approvals, PR/conversation/current-check requirements, deletion and force-push blocked"
+    }
+  ],
+  "verifiedExistingControls": [
+    "Private vulnerability reporting",
+    "Dependency graph",
+    "Dependabot alerts and security updates",
+    "Grouped security updates",
+    "Secret scanning and push protection",
+    "Immutable releases",
+    "Collaborator-only wiki editing",
+    "Read-only Actions token default",
+    "Actions PR creation/approval disabled"
+  ],
+  "mainRuleset": {
+    "id": 25761788,
+    "name": "Main delivery checks",
+    "url": "https://github.com/Anheledir/SidePulse.NET/settings/rules/25761788",
+    "enforcement": "active",
+    "include": [
+      "~DEFAULT_BRANCH"
+    ],
+    "bypassActors": [],
+    "requiredApprovals": 0,
+    "requirePullRequest": true,
+    "requireConversationResolution": true,
+    "requireUpToDateBranch": true,
+    "blockDeletion": true,
+    "blockForcePushes": true,
+    "requiredChecks": [
+      {
+        "context": "documentation",
+        "integrationId": 15368
+      },
+      {
+        "context": "build (windows-latest)",
+        "integrationId": 15368
+      },
+      {
+        "context": "build (ubuntu-latest)",
+        "integrationId": 15368
+      },
+      {
+        "context": "build (macos-latest)",
+        "integrationId": 15368
+      },
+      {
+        "context": "CodeQL (csharp)",
+        "integrationId": 15368
+      },
+      {
+        "context": "CodeQL (python)",
+        "integrationId": 15368
+      },
+      {
+        "context": "CodeQL (actions)",
+        "integrationId": 15368
+      },
+      {
+        "context": "Dependency review",
+        "integrationId": 15368
+      },
+      {
+        "context": "CodeQL",
+        "integrationId": 57789
+      }
+    ],
+    "existingDisabledRuleset": {
+      "id": 25757011,
+      "name": "Main",
+      "disposition": "Preserved disabled without changes"
+    }
+  },
+  "project": {
+    "number": 5,
+    "name": "SidePulse.NET delivery",
+    "url": "https://github.com/users/Anheledir/projects/5/views/1",
+    "visibility": "private",
+    "linkedRepository": "Anheledir/SidePulse.NET",
+    "description": "Cross-platform SidePulse.NET delivery, compatibility evidence and release gates.",
+    "view": "Delivery",
+    "columns": [
+      "Todo",
+      "In Progress",
+      "Validation",
+      "Done"
+    ],
+    "items": {
+      "Todo": [
+        11
+      ],
+      "In Progress": [
+        5,
+        7,
+        8,
+        9
+      ],
+      "Validation": [
+        2,
+        3,
+        4,
+        6,
+        10,
+        12
+      ],
+      "Done": [
+        1
+      ]
+    },
+    "autoImport": "Open issues and pull requests from this repository",
+    "readme": "Scope, status meanings, validation evidence and attribution documented."
   }
 }

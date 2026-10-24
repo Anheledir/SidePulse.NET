@@ -8,11 +8,11 @@ the latest published preview; older previews are not maintained independently.
 ## Report a vulnerability
 
 Use [GitHub private vulnerability reporting](https://github.com/Anheledir/SidePulse.NET/security/advisories/new)
-when enabled. If that page is unavailable, open an issue requesting a private
+(enabled and verified 2026-10-24). If that page is unavailable, open an issue requesting a private
 reporting channel without publishing exploit details, phone tokens, credentials,
 logs containing secrets, or personal data. A maintainer will arrange a private
-channel. Private reporting availability is tracked in the repository settings
-record; this policy does not imply that it is enabled.
+channel. Effective settings and subsequent changes are tracked in the repository settings
+record.
 
 Please include the commit/version, OS and architecture, affected command, impact,
 and a minimal reproduction with redacted sample data. Coordinate publication with

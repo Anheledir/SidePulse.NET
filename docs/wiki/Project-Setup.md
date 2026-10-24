@@ -47,3 +47,14 @@ explains private reporting and trust boundaries. The
 [configuration record](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/repository-settings.md)
 separates observed settings, source configuration and desired admin changes.
 Adding a workflow does not prove that repository-level security controls are on.
+
+## Delivery tracking and protection
+
+The [delivery board](https://github.com/users/Anheledir/projects/5/views/1) is a
+private owner project linked to the repository. Todo, In Progress, Validation and
+Done separate unfinished code from outstanding compatibility evidence. All issues
+and PR #12 are represented. The active Main delivery checks ruleset requires PRs,
+resolved conversations, current native/security checks and blocks force-push and
+deletion. The combined CodeQL alert check is required in addition to scan jobs.
+The configuration record includes exact applied settings and observed existing
+controls, verified 2026-10-24.
