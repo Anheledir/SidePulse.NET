@@ -24,6 +24,7 @@ public static class OpenCodePlugin
                 const type = event.type;
                 const key = (type.startsWith("permission.") ? "p:" : "q:") + (p.requestID ?? p.id ?? "unknown");
                 const waits = pending.get(id) ?? new Set();
+                if (type.endsWith(".asked") || type.endsWith(".replied") || type === "question.rejected") failed.delete(id);
                 if (type.endsWith(".asked")) { waits.add(key); pending.set(id, waits); }
                 if (type.endsWith(".replied") || type === "question.rejected") {
                   waits.delete(key);

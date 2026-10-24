@@ -16,7 +16,7 @@ async function expect(state) {
 }
 await plugin.event({ event: { type: 'session.status', properties: { status: { type: 'busy' } } } });
 assert.equal(snapshot().Sessions.length, 0);
-await send('session.created', { info: { id: 'opencode-test' } });
+await plugin.event({ event: { type: 'session.created', properties: { info: { id: 'opencode-test' } } } });
 await expect('Idle');
 await send('session.status', { status: { type: 'busy' } });
 await expect('Working');
@@ -35,10 +35,18 @@ await expect('Error');
 await send('session.status', { status: { type: 'retry' } });
 await expect('Working');
 await send('session.status', { sessionID: 'other-session', status: { type: 'busy' } });
-await send('session.deleted', { info: { id: 'opencode-test' } });
+await plugin.event({ event: { type: 'session.deleted', properties: { info: { id: 'opencode-test' } } } });
 await expect('Working');
 assert.equal(snapshot().Sessions.length, 2);
 await send('session.status', { sessionID: 'other-session', status: { type: 'idle' } });
+await expect('Idle');
+await send('session.error');
+await expect('Error');
+await send('question.asked', { id: 'recovery-question' });
+await expect('Waiting');
+await send('question.replied', { requestID: 'recovery-question' });
+await expect('Working');
+await send('session.status', { status: { type: 'idle' } });
 await expect('Idle');
 await send('unrecognized', { status: { type: 'busy' } });
 await expect('Idle');
