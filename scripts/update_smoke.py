@@ -47,7 +47,7 @@ def main(executable):
             version = subprocess.run([str(target / executable.name), '--version'], env=env, capture_output=True, text=True, timeout=15)
             assert version.returncode == 0 and version.stdout.strip() == shipped['Version']
             status = subprocess.run([str(target / executable.name), 'update', 'status', '--json'], env=env, capture_output=True, text=True, timeout=15)
-            assert status.returncode == (1 if fail else 0) and json.loads(status.stdout)['State'] == state['State']
+            assert status.returncode == (1 if fail else 0) and json.loads(status.stdout)['state'] == state['State']
             assert (job / 'failed-package').exists() if fail else backup.exists()
             print('Native updater ' + ('startup failure rollback' if fail else 'replacement and backup') + ' passed.', flush=True)
 
