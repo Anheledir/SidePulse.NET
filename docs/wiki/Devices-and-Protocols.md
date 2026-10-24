@@ -1,3 +1,7 @@
+> Implementation update: QR/SSE pairing for the default iPhone bridge and encrypted
+> native link storage are implemented on Windows, macOS and Linux. Android and custom bridge origins remain planned.
+> Hardware and TestFlight app verification are still pending. See [[Getting-Started]].
+
 # Devices and protocols
 
 ## Local hardware

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>sidepulse-net</AssemblyName>
+    <Version>0.1.0-alpha.6</Version>
+    <Description>Unofficial SidePulse companion</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SidePulse.Core/SidePulse.Core.csproj" />
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Spectre.Console.Cli" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../third-party/**/*" Link="Licenses/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../LICENSE" Link="Licenses/SidePulse.NET/LICENSE" />
+    <EmbeddedResource Include="../../NOTICE.md" Link="Licenses/SidePulse.NET/NOTICE.md" />
+    <EmbeddedResource Include="Dependencies.json" />
+    <Content Include="../../docs/wiki/Updating.md" Link="docs/Updating.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../docs/wiki/Animations.md" Link="docs/Animations.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../docs/wiki/Scripting-and-Menus.md" Link="docs/Scripting-and-Menus.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

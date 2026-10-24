@@ -1,8 +1,8 @@
 # Contributing
 
-SidePulse.NET is currently in concept review. Discuss significant design choices
-before implementation. Keep the application free of C# scaffolding until the
-concept and first milestone are approved.
+SidePulse.NET has an initial implementation preview. Discuss significant design
+changes before expanding the architecture. Keep implemented and verified behavior
+clearly distinguished from the complete planned product.
 
 ## Changes and reviews
 
@@ -12,11 +12,11 @@ Update wiki sources in `docs/wiki` in the same pull request as behavior changes.
 The main repository is the documentation source of truth; direct wiki edits need
 to be brought back into it before the next automated publication.
 
-## When implementation starts
+## Implementation
 
 Use .NET 10 LTS and Spectre.Console for presentation. Keep state reduction,
-protocol logic and device transports independent of the terminal UI. Introduce
-central package management and lock files with the first solution. Add meaningful
+protocol logic and device transports independent of the terminal UI. Keep
+package versions in `Directory.Packages.props` and commit updated lock files. Add meaningful
 unit, transport-contract, hook-failure and hardware smoke tests as those areas arrive.
 
 Rendered, interactive output is for people. Hook and JSON output must have no

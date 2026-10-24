@@ -1,7 +1,11 @@
 # Roadmap
 
-All application work is planned. Only the initial documentation and automation
-scaffolding are prepared.
+The implementation preview now includes USB file output, protected phone links,
+four agent integrations, a background host, Dot/Pro patterns, a managed animation
+interpreter, Spectre previews and custom editing, profiles, menus and script output.
+See [[Getting-Started]], [[Animations]] and [[Scripting-and-Menus]]. Native CI checks
+are distinct from actual hardware/provider verification, which remains pending.
+The milestone descriptions below retain broader acceptance targets.
 
 ## M0: Concept and project foundation
 

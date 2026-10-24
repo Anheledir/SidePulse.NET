@@ -11,6 +11,7 @@ The repository and wiki are public and use the MIT license.
 | .NET CI | Restore, build and test a root solution on Windows, Linux and macOS |
 | Wiki sync | Publish reviewed docs/wiki pages on the default branch |
 | Upstream watch | Check upstream every Monday at 07:17 UTC and on manual dispatch |
+| Security | CodeQL for C#, Python and Actions; PR dependency review blocks new high/critical advisories |
 | Dependabot | Propose weekly dependency updates |
 
 Actions are pinned to upstream commit SHAs. Permissions are read-only by default.
@@ -38,3 +39,22 @@ The workflow uses the built-in Actions token with `issues: write`. No extra toke
 external service or personal reminder is required. GitHub schedules may be delayed;
 use **Actions → Upstream watch → Run workflow** for an immediate check. Public
 repositories with no activity may have scheduled workflows disabled by GitHub.
+
+## Security and repository administration
+
+[SECURITY.md](https://github.com/Anheledir/SidePulse.NET/blob/main/SECURITY.md)
+explains private reporting and trust boundaries. The
+[configuration record](https://github.com/Anheledir/SidePulse.NET/blob/main/docs/repository-settings.md)
+separates observed settings, source configuration and desired admin changes.
+Adding a workflow does not prove that repository-level security controls are on.
+
+## Delivery tracking and protection
+
+The [delivery board](https://github.com/users/Anheledir/projects/5/views/1) is a
+private owner project linked to the repository. Todo, In Progress, Validation and
+Done separate unfinished code from outstanding compatibility evidence. All issues
+and PR #12 are represented. The active Main delivery checks ruleset requires PRs,
+resolved conversations, current native/security checks and blocks force-push and
+deletion. The combined CodeQL alert check is required in addition to scan jobs.
+The configuration record includes exact applied settings and observed existing
+controls, verified 2026-10-24.

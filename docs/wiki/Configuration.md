@@ -1,3 +1,7 @@
+> Implementation update: Links use native credentials: Windows DPAPI, macOS Keychain or Linux Secret Service.
+> Alias/default management and the `SIDEPULSE_NET_HOME` override are implemented.
+> See [[Getting-Started]] for working commands. The remainder describes the target configuration design.
+
 # Configuration and coexistence
 
 Status: proposed.

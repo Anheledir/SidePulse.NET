@@ -1,8 +1,10 @@
 name: .NET CI
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
@@ -42,6 +44,9 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      SIDEPULSE_NATIVE_VAULT_TESTS: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -49,11 +54,31 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
+      - name: Prepare isolated native credential vault
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = 'Linux' ]; then
+            sudo apt-get update -qq -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+            sudo apt-get install -y --no-install-recommends libsecret-tools gnome-keyring dbus-x11
+            bus_address=$(dbus-daemon --session --fork --print-address=1)
+            export DBUS_SESSION_BUS_ADDRESS="$bus_address"
+            echo "DBUS_SESSION_BUS_ADDRESS=$bus_address" >> "$GITHUB_ENV"
+            printf '%s' 'sidepulse-ci-only' | gnome-keyring-daemon --unlock --components=secrets
+          else
+            security default-keychain -d user > "$RUNNER_TEMP/sidepulse-previous-keychain"
+            security list-keychains -d user > "$RUNNER_TEMP/sidepulse-previous-search-list"
+            security create-keychain -p 'sidepulse-ci-only' "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security default-keychain -d user -s "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security list-keychains -d user -s "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security unlock-keychain -p 'sidepulse-ci-only' "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security set-keychain-settings -lut 21600 "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+          fi
       - name: Restore
         env:
           SOLUTION: ${{ needs.detect.outputs.solution }}
         shell: pwsh
-        run: dotnet restore $env:SOLUTION
+        run: dotnet restore $env:SOLUTION --locked-mode
       - name: Build
         env:
           SOLUTION: ${{ needs.detect.outputs.solution }}
@@ -64,3 +89,75 @@ jobs:
           SOLUTION: ${{ needs.detect.outputs.solution }}
         shell: pwsh
         run: dotnet test $env:SOLUTION --configuration Release --no-build
+      - name: Exercise CLI and local host with simulated hardware
+        shell: pwsh
+        run: |
+          $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
+          python scripts/cli_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/terminal_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/animation_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/agent_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Publish and exercise self-contained previews
+        shell: pwsh
+        run: |
+          $prefix = if ($IsWindows) { 'win' } elseif ($IsMacOS) { 'osx' } else { 'linux' }
+          $native = "$prefix-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())"
+          foreach ($architecture in @('x64', 'arm64')) {
+            $rid = "$prefix-$architecture"
+            $destination = "artifacts/$rid"
+            dotnet publish src/SidePulse.Cli -c Release -r $rid --self-contained true -o $destination
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Copy-Item LICENSE,NOTICE.md $destination
+            Copy-Item -Recurse third-party $destination
+            New-Item -ItemType Directory -Force "$destination/third-party/dotnet" | Out-Null
+            Copy-Item "$env:DOTNET_ROOT/LICENSE.txt","$env:DOTNET_ROOT/ThirdPartyNotices.txt" "$destination/third-party/dotnet"
+            Copy-Item docs/wiki/Getting-Started.md $destination
+            $version = ([xml](Get-Content src/SidePulse.Cli/SidePulse.Cli.csproj -Raw)).Project.PropertyGroup.Version
+            python scripts/package_manifest.py $destination $rid $version
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            if ($rid -eq $native) {
+              $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
+              python scripts/cli_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              python scripts/animation_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              python scripts/update_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              python scripts/agent_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+            if ($IsWindows) {
+              Compress-Archive -Path "$destination/*" -DestinationPath "artifacts/sidepulse-net-$rid.zip"
+            } else {
+              tar -czf "artifacts/sidepulse-net-$rid.tar.gz" -C $destination .
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+          }
+      - name: Upload platform previews
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sidepulse-net-${{ runner.os }}-preview
+          path: |
+            artifacts/*.zip
+            artifacts/*.tar.gz
+          retention-days: 14
+      - name: Remove temporary macOS keychain
+        if: always() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/sidepulse-previous-keychain" ]; then
+            previous=$(cat "$RUNNER_TEMP/sidepulse-previous-keychain" | tr -d '"' | xargs)
+            security default-keychain -d user -s "$previous"
+          fi
+          if [ -f "$RUNNER_TEMP/sidepulse-previous-search-list" ]; then
+            keychains=()
+            while IFS= read -r keychain; do keychains+=("$keychain"); done < <(python3 -c 'import shlex,sys; print("\n".join(shlex.split(sys.stdin.read())))' < "$RUNNER_TEMP/sidepulse-previous-search-list")
+            security list-keychains -d user -s "${keychains[@]}"
+          fi
+          if [ -f "$RUNNER_TEMP/sidepulse-ci.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+          fi

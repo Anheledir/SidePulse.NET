@@ -1,9 +1,12 @@
+> Implementation preview: [[Getting-Started]] lists working commands and current limitations. Other pages describe the complete planned product.
+
 # SidePulse.NET
 
 **An unofficial .NET companion for SidePulse.**
 
-This wiki describes the proposed product. Application implementation has not
-started, and no SidePulse.NET binaries are available yet.
+The first implementation preview is available in the source repository and CI
+artifacts. Start with [[Getting-Started]] for working commands and limitations.
+The concept pages describe the intended complete product.
 
 Start with [[Product-Concept]], [[Terminal-Experience]] and [[Roadmap]].
 Technical detail lives in [[Architecture]], [[Compatibility]], [[Devices-and-Protocols]],

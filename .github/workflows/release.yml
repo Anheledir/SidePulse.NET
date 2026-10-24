@@ -1,0 +1,60 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Require a version tag matching the application
+        env:
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          python3 - <<'PY'
+          import os, re, xml.etree.ElementTree as ET
+          version = ET.parse('src/SidePulse.Cli/SidePulse.Cli.csproj').findtext('./PropertyGroup/Version')
+          if os.environ['RELEASE_REF'] != 'refs/tags/v' + version or not re.fullmatch(r'\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?', version):
+              raise SystemExit('Select/push a vVERSION tag matching the project version; build metadata is not used for release tags.')
+          PY
+  build:
+    needs: validate
+    uses: ./.github/workflows/dotnet-ci.yml
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Collect tested packages and write checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_RUN: ${{ github.run_id }}
+        run: |
+          gh run download "$RELEASE_RUN" --pattern 'sidepulse-net-*-preview' --dir release-input
+          mkdir release-files
+          find release-input -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec cp -n {} release-files/ \;
+          python3 scripts/release_checksums.py release-files
+      - name: Upload all assets before making the release visible
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          flags=()
+          if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" --verify-tag --draft --title "SidePulse.NET ${RELEASE_TAG#v}" --generate-notes "${flags[@]}" release-files/*
+          gh release edit "$RELEASE_TAG" --draft=false "${flags[@]}"

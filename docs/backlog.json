@@ -1,79 +1,79 @@
 [
   {
-    "title": "M0: Review product concept and compatibility boundaries",
+    "title": "Investigate firmware, raw USB and platform-specific helpers",
     "labels": [
       "documentation"
     ],
-    "body": "Approve terminal workflow, .NET 10 baseline, initial sidepulse-net command, aggregation priorities and explicit platform exclusions. Record decisions before C# scaffolding.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+    "body": "Priority: P3 feasibility research; intentionally outside the preview implementation.\n\n- [ ] Inventory firmware recovery and read-only control protocols against pinned upstream, with licensing and device/firmware matrix.\n- [ ] Assess SPC2/READ2ME and raw USB access separately on Windows/macOS/Linux, including drivers, privilege requirements and exclusive-device access.\n- [ ] Define recovery and interruption tests before firmware writes; require explicit device confirmation and a recoverable test unit.\n- [ ] Assess macOS guards/power helpers and optional MLX classifier as separate platform-specific features, not cross-platform requirements.\n- [ ] Record go/no-go decisions, excluded behavior and safe fallback to mounted-file output.\n\nAcceptance: publish research and transport boundaries before implementing privileged/raw access. Do not bundle drivers, flash firmware or claim parity as part of this review. Dependencies: physical inventory/results from #2/#3.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
   },
   {
-    "title": "M1: Port LED language and upstream validation vectors",
+    "title": "M3: Validate cross-platform releases and verified self-update",
     "labels": [
       "enhancement"
     ],
-    "body": "Verify escapes, 512-byte and 20-line limits, LED counts, brightness, invalid input and attributed fixtures against the pinned upstream revision.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
-  },
-  {
-    "title": "M1: Implement writable USB device transport on Windows",
-    "labels": [
-      "enhancement"
-    ],
-    "body": "Discover volumes, select destinations and write/flush programs. Verify a real Dot and removal, read-only and ambiguous-device cases.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
-  },
-  {
-    "title": "M1: Implement phone pairing and bridge delivery",
-    "labels": [
-      "enhancement"
-    ],
-    "body": "Pair original iOS app, protect credentials, support target selection and separate silent LED updates from visible notifications. Test offline delivery and show only supported acknowledgement levels.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
-  },
-  {
-    "title": "M1: Implement shared host and session state reduction",
-    "labels": [
-      "enhancement"
-    ],
-    "body": "Version current-user IPC, aggregate concurrent sessions, ignore late events, persist minimal restart metadata and serialize outputs. Hooks must not wait on network I/O.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
-  },
-  {
-    "title": "M1: Implement Copilot CLI hook integration",
-    "labels": [
-      "enhancement"
-    ],
-    "body": "Install/repair/remove dedicated hooks, handle real waiting notifications and turn ends, avoid permission decisions, preserve unrelated hooks and verify a real Windows CLI session.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
-  },
-  {
-    "title": "M1: Design and implement the Spectre terminal experience",
-    "labels": [
-      "enhancement"
-    ],
-    "body": "Prototype live dashboard/menu interaction, compact layout, session/device views, terminal capabilities, keyboard flow and plain/JSON/noninteractive modes.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
-  },
-  {
-    "title": "M1: Add diagnostics, aliases and explicit migration",
-    "labels": [
-      "enhancement"
-    ],
-    "body": "Explain broken integrations/paths and transport failures; add device aliases and import preview/backup without modifying the existing Python port silently.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+    "body": "Priority: P1 release gate. Status: cross-platform packaging/updater implemented in PR #12; no release published.\n\n- [x] Self-contained Windows/Linux/macOS x64 + ARM64 archives; manifests, bundled licenses, SHA256SUMS publication workflow.\n- [x] Explicit update check/install/status, semantic channel selection, checksums/digests, bounded extraction and file verification.\n- [x] Native Windows x64/Linux x64/macOS ARM64 helper replacement, startup-failure rollback and receipts in CI. Other architectures are cross-built only.\n- [x] Review fixes cover pre-existing download preservation, body timeout and directory-entry limits.\n- [ ] Exercise matching-tag release workflow and inspect all six assets/checksums before announcing a downloadable release. Creating a release is not authorized by this issue review.\n- [ ] Test public install orchestration end to end against a controlled published preview: lookup/download/prepare/helper launch/caller exit/replacement/status. Existing smoke prepares the helper plan directly.\n- [ ] Validate manual install/remove/PATH instructions on clean supported systems; execute remaining architecture packages on native hardware.\n- [ ] Record signing and package-manager decisions; packages are currently unsigned, no installer/package manager exists.\n- [ ] Before adding cleanup or stronger preservation claims, detect user-added file edits between Prepare and Apply; current snapshot is preparation-time and later edits survive only in retained backup.\n\nAcceptance: scheduling is not completion; keep backups and stop host before update. Checksums detect corruption, not compromise of the release publisher. Upgrade from source/old unmanifested builds requires manual install.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
   },
   {
     "title": "M2: Port remaining upstream integrations and remote relay",
     "labels": [
       "enhancement"
     ],
-    "body": "Track Codex, Claude, Cursor, Grok and Junie separately, plus relay and Android. Record payload compatibility and hardware verification per inventory row.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+    "body": "Priority: P2 provider expansion and remote design.\n\n- [x] Codex current local lifecycle hooks, Claude Code and Kiro CLI V3 adapters/config generators added in PR #12, alongside Copilot (#6).\n- [x] Provider capability inventory states unsupported subagent/payload cases; root sessions are namespaced.\n- [ ] Record actual installed provider versions and captured redacted event fixtures for Codex, Claude and Kiro; run real waiting/error/completion acceptance separately for each.\n- [ ] Cursor adapter and documented event contract.\n- [ ] Grok adapter and documented event contract.\n- [ ] Junie adapter and documented event contract.\n- [ ] Assess Gemini support before advertising it.\n- [ ] Design authenticated relay and Android support with separate threat model, secrets storage and delivery semantics.\n\nAcceptance: no implied provider parity from generated JSON alone; no paid API dependency or automatic trust changes. Split a provider into its own issue when implementation begins.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
   },
   {
-    "title": "M3: Build verified self-contained Windows releases",
+    "title": "M1: Add diagnostics, aliases and explicit migration",
     "labels": [
       "enhancement"
     ],
-    "body": "Introduce release workflow after real projects/tests exist; produce x64/arm64 artifacts and checksums, verify install/uninstall and document signing/package-manager decisions.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+    "body": "Priority: P2 follow-up, partial implementation.\n\n- [x] Doctor diagnostics, explicit device selection, phone aliases/defaults and host logs.\n- [x] Existing Python configuration is not silently modified or imported.\n- [ ] Add device aliases with ambiguity checks and previewable target resolution.\n- [ ] Implement explicit Python migration/import preview, exact backups, user-selected destinations and rollback evidence.\n- [ ] Test missing drives, inaccessible vaults, invalid hooks and failed bridge delivery with actionable diagnostics.\n\nAcceptance: a dry-run must not create provider/configuration/backup/lock files. Preserve old Python configuration and credentials; never print tokens. Depends on transport and phone behavior in #3/#4.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
   },
   {
-    "title": "Investigate firmware, raw USB and platform-specific helpers",
+    "title": "M1: Design and implement the Spectre terminal experience",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Priority: P2 UX and accessibility. Status: interactive CLI and animation studio implemented in PR #12.\n\n- [x] Root/group cursor menus, guided pattern editor, Dot/Pro Spectre previews, review/copy/export of full single-line commands.\n- [x] --quiet, --json, --no-interactive, redirected IO and NO_COLOR behavior; shell quoting tests; Unix PTY menu/editor/playback smoke.\n- [x] About/docs/credits and offline dependency license texts, explicit website opening without unapproved affiliate IDs.\n- [ ] Implement or explicitly defer the originally proposed continuously refreshed host dashboard (current host renders state snapshots).\n- [ ] Manual Windows Terminal keyboard/clipboard and narrow-screen/no-color accessibility checks; PTY smoke is Unix-only.\n- [ ] Audit JSON schemas across command states, including update status with/without receipts, and document stable script fields.\n\nAcceptance: scripts never enter menus or wait for input; stdout remains usable for machine output and errors go to stderr.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
+  },
+  {
+    "title": "M1: Implement Copilot CLI hook integration",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Priority: P1 real-provider acceptance. Status: integration implemented in PR #12.\n\n- [x] Provider-specific Copilot lifecycle/notification parser and silent Bash/PowerShell wrappers.\n- [x] Dedicated hook ownership, byte-exact backups, dry-run setup/removal and changed-file refusal.\n- [x] QA regression: changed executable reinstall now refuses instead of silently retaining old hooks; uninstall preview creates no lock file.\n- [ ] Verify real Windows Copilot CLI session with recorded version: Working, permission waiting, completion, error and multiple concurrent sessions.\n- [ ] Verify trust prompts, restart requirements and setup/remove alongside unrelated real hooks.\n- [ ] Define repair workflow. Current safe path is explicit uninstall/reinstall; no automatic repair command exists.\n\nAcceptance: do not auto-approve tool use or modify trust/permission settings. Current tests use fixtures/generated wrappers, not a live Copilot session.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
+  },
+  {
+    "title": "M1: Implement shared host and session state reduction",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Priority: P1 lifecycle/compatibility specification. Status: shared host implemented in PR #12.\n\n- [x] Current-user IPC, single-host lease, bounded requests, ACKed control RPC, independent bounded output queue.\n- [x] Provider-namespaced sessions; out-of-order timestamp rejection; Waiting > Working > Error > Done > Idle > Unknown; error survives Stop.\n- [x] Detached start/status/stop/logs and Unix crash recovery exercised in native CI.\n- [ ] Decide and implement explicit IPC protocol version negotiation before supporting mixed CLI/host versions. Currently require same version and stop host for upgrade.\n- [ ] Resolve restart semantics: implementation intentionally starts Unknown and does not persist sessions; original minimal-restart-metadata requirement is deferred, not complete.\n- [ ] Specify retention/recovery for 1,024 live/error sessions and long-lived abandoned sessions; provide an explicit reset/removal policy without inventing agent completion.\n- [ ] Define direct-command arbitration: state/write/animation apply currently bypass host serialization and can replace its output; either document manual override semantics or route them through the host.\n\nAcceptance: hooks remain silent and bounded, never wait for network or change permission decisions. Keep restart/version/retention decisions testable.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
+  },
+  {
+    "title": "M1: Implement phone pairing and bridge delivery",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Priority: P1 iPhone acceptance. Status: pairing and delivery implemented in PR #12.\n\n- [x] QR/SSE pairing, bounded input, token normalization and link aliases/defaults.\n- [x] DPAPI/Keychain/Secret Service protection with fail-closed recovery; native vault CI.\n- [x] Silent bridge delivery and explicit target selection; redacted errors.\n- [ ] Scan the QR with the original TestFlight app and verify token persistence/restart on each desktop OS.\n- [ ] Test offline bridge, network interruption, HTTP errors and phone reconnection; document retry policy (no durable offline queue today).\n- [ ] Demonstrate silent LED update versus any visible notification behavior supported by the app; visible notifications are not implemented as a separate command.\n\nAcceptance: record bridge HTTP acceptance separately from observed phone display. No transport acknowledgement overclaim.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
+  },
+  {
+    "title": "M1: Validate cross-platform writable USB/SD device transport",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Priority: P1 physical acceptance. Status: cross-platform mounted-file implementation in PR #12.\n\n- [x] Discover mounted LEDS.LED files; explicit selection; ambiguous-device refusal.\n- [x] Write/length/flush to the existing virtual file without rename; simulated file tests.\n- [ ] Record physical Dot and Pro acceptance on Windows, macOS and Linux with device/firmware/OS versions.\n- [ ] Exercise removal during write, read-only media, multiple devices and recovery on real mounts.\n- [ ] Verify Linux mount discovery on actual USB and SD mount layouts; document when --device is required.\n\nAcceptance: report file-write success only, never firmware/display acknowledgement. Read-only USB/SPC2/READ2ME work belongs in #11.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
+  },
+  {
+    "title": "M1: Port LED language and upstream validation vectors",
+    "labels": [
+      "enhancement"
+    ],
+    "body": "Priority: P1 before firmware-parity claims. Status: partial implementation in PR #12.\n\n- [x] Envelope validation: escapes, NUL rejection, 512 UTF-8 bytes, 20 physical lines.\n- [x] Managed Dot/Pro parser/player: indexed colors, timing, easing, brightness, roll and repeat; bounded simulation.\n- [x] Attributed upstream pattern assets pinned by NOTICE.md; automated parsing/frame tests.\n- [ ] Build an independently derived, attributed upstream/firmware golden vector corpus for timing, repeat boundaries, invalid syntax and model indexing.\n- [ ] Compare real Dot and Pro output against these vectors and record firmware versions/results.\n\nAcceptance: distinguish envelope validation, managed simulation and firmware acceptance. Terminal color/timing is approximate until comparison. No claim of full grammar or firmware parity.\n\nReviewed against PR #12 (unmerged alpha), 2026-10-23. Checked items mean implemented in that PR, not released or hardware-certified. Evidence: [native CI baseline](https://github.com/Anheledir/SidePulse.NET/actions/runs/40037463280), source and tests in PR #12; [architecture/QA review](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/reviews/pr-12.md). Keep this issue open until its remaining acceptance criteria are met."
+  },
+  {
+    "title": "M0: Review product concept and compatibility boundaries",
     "labels": [
       "documentation"
     ],
-    "body": "Decide feasibility and safety tests for firmware recovery, read-only USB control, Windows drivers, macOS guards/power helpers and the optional MLX classifier. Do not imply parity before verification.\n\nSee docs/wiki/Roadmap.md and docs/wiki/Compatibility.md.\n\nStatus: planned, implementation not started."
+    "body": "Priority: complete concept decision.\n\n- [x] Maintainer approved recognizable/simple Spectre terminal design, MIT license and implementation.\n- [x] .NET 10, independent sidepulse-net executable and coexistence with the Python port.\n- [x] Cross-platform scope, provider-namespaced sessions and explicit unsupported transport boundaries.\n- [x] Decisions recorded in docs/decisions/0001 through 0003; implementation proceeds in PR #12.\n\nThe discussion subsequently expanded the Windows-first concept to Windows, macOS and Linux. This closes concept approval only; implementation, physical compatibility and release gates remain in #2–#11.\n\nReview: 2026-10-23. See PR #12 and docs/decisions."
   }
 ]

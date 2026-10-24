@@ -1,6 +1,8 @@
 # Architecture
 
-Status: proposed; no application components have been implemented.
+Status: implemented preview boundaries plus explicit future decisions. The solution
+contains Core and CLI projects, with foreground/detached host commands and
+current-user IPC. See [[Getting-Started]] and the PR #12 review for limitations.
 
 ## Boundaries
 
@@ -13,9 +15,13 @@ Status: proposed; no application components have been implemented.
 | CLI | Spectre.Console.Cli commands and Spectre.Console presentation |
 | Tests | Reducer, protocol, adapter contracts, rendered output and hardware smoke checks |
 
-The UI never owns device transport state. All writers submit intents to one host,
-so a background service, dashboard and hook cannot independently overwrite LEDs.
-A foreground-only mode should be possible for diagnosis and restricted machines.
+Hook-driven output is serialized by the host. Direct `state`, `write` and animation
+apply commands send independently and can overwrite a running host's pattern.
+They are explicit one-shot operations, not clients of a global output arbiter.
+Stop the host before manual device checks. Coordinating direct writers with a
+running host remains a decision in #5; do not claim exclusive device ownership.
+The Application/Transports rows describe logical responsibilities, not additional
+projects; migration, relay and persistence in this table are future work.
 
 ## Events and aggregation
 
@@ -24,21 +30,23 @@ last observation. Use explicit lifecycle events and ignore out-of-order events.
 A finished subagent does not finish its parent session. Cancellation, agent errors,
 recoverable tool errors and loss of observation remain distinguishable.
 
-Proposed aggregation: waiting for user input takes priority, followed by active
+Implemented aggregation: waiting for user input takes priority, followed by active
 work; show unhandled errors when nothing is actively working; completion only
 when no tracked session remains active. Idle and unknown are separate states.
-The exact policy is a design decision to validate with realistic event traces.
+Tests cover the reducer; validate the policy further with real provider traces.
 
 ## Local event path
 
 Hook adapters enqueue minimal metadata and return quickly. The host handles
-network I/O, deduplication, bounded retries and transport diagnostics asynchronously.
+network I/O asynchronously through a bounded latest-state queue. Repeated events
+can retry delivery; there is no durable retry queue or separate event deduplication.
 On Windows use current-user-restricted named pipes; do not open a network listener
 just to receive local hook events. Document protocol versioning and startup races.
 
 ## Failure and restart behavior
 
-Persist enough metadata for restart recovery without storing prompts or tool
-arguments. After restart, stale work becomes unknown until refreshed by evidence.
-Do not infer successful completion from an expired heartbeat. Use bounded queues
-and expose dropped events or undelivered outputs in diagnostics.
+Restart currently begins Unknown with an empty session table; no session metadata
+is persisted. Do not infer successful completion from an expired heartbeat.
+Protocol negotiation, restart metadata and session retention are tracked in #5.
+The output queue is bounded and can drop older states while keeping the latest.
+Undelivered output is logged, but there is no per-session delivery history.

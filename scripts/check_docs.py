@@ -17,7 +17,7 @@ def check(root):
         count += 1
         text = path.read_text(encoding='utf-8')
         name = str(path.relative_to(root))
-        if not text.endswith('\n'):
+        if not text.endswith('\n') and path.name != 'packages.lock.json':
             errors.append(f'{name}: missing final newline')
         for number, line in enumerate(text.splitlines(), 1):
             if line.rstrip() != line:
