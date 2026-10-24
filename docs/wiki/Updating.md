@@ -32,9 +32,11 @@ signatures or protection against a compromised publisher account.
 Self-update requires a self-contained distribution containing `sidepulse-install.json`.
 Source builds, framework-dependent binaries, older previews without that manifest,
 modified application files and symlinked installations require manual installation.
-The beta uses `spn` package/executable names. Upgrade from alpha manually using
-the release migration instructions; the old updater is not compatible with this
-rename. Subsequent beta updates retain the verified directory-package format.
+Beta 2 adds single-file manifest format 2, with exactly one owned executable.
+It also reads legacy format-1 directory packages. Beta 1's updater cannot read the
+new format: download the new executable and use `spn install` to adopt/upgrade the
+owned installation, or install into a separate directory. Stop the host first.
+Alpha still requires the manual rename transition described in beta 1's notes.
 The install directory and its parent must be writable; the updater
 never elevates privileges. Package-manager installations should use that manager.
 

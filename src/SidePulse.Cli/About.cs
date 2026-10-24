@@ -16,6 +16,8 @@ public class AboutSettings : CommandSettings
 }
 public static class ProjectInfo
 {
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000", Justification = "An empty location intentionally detects a real published bundle, not a build apphost.")]
+    public static bool IsBundled() => string.IsNullOrEmpty(typeof(ProjectInfo).Assembly.Location);
     public const string Website = "https://sidepulse.io/";
     public const string Github = "https://github.com/Anheledir/SidePulse.NET";
     public const string Upstream = "https://github.com/inteliwear/sidepulse";
@@ -31,6 +33,7 @@ public static class ProjectInfo
         }
     }
     public static IReadOnlyList<string> LicenseResources => Assembly.GetManifestResourceNames().Where(n => n.Contains(".Licenses.", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToArray();
+    public static IReadOnlyList<string> DocumentationResources => Assembly.GetManifestResourceNames().Where(n => n.Contains(".Docs.", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToArray();
     public static string LicenseText(string name)
     {
         using var reader = new StreamReader(Assembly.GetManifestResourceStream(name)!); return reader.ReadToEnd();
@@ -73,10 +76,8 @@ public sealed class DocsCommand : Command<AboutSettings>
     public override int Execute(CommandContext context, AboutSettings settings, CancellationToken cancellationToken)
     {
         if (!settings.Offline) return ProjectInfo.Link(ProjectInfo.Wiki, settings);
-        var directory = Path.Combine(AppContext.BaseDirectory, "docs");
-        var files = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.md").Order(StringComparer.Ordinal).ToArray() : [];
-        if (files.Length == 0) throw new IOException("Offline documentation is missing from this installation.");
-        if (settings.Json) Output.Print(files); else foreach (var file in files) { Console.WriteLine(Path.GetFileName(file)); Console.WriteLine(File.ReadAllText(file)); }
+        var files = ProjectInfo.DocumentationResources;
+        if (settings.Json) Output.Print(files); else foreach (var file in files) { Console.WriteLine(file); Console.WriteLine(ProjectInfo.LicenseText(file)); }
         return 0;
     }
 }

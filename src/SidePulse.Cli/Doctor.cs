@@ -23,6 +23,8 @@ public sealed class DoctorCommand : Command<DoctorSettings>
             new("Platform", "ok", RuntimeInformation.OSDescription)
         };
         var devices = DeviceTransport.Discover();
+        var installation = UserInstallation.ReadRecord();
+        checks.Add(new("Installation", "info", installation is null ? "Portable. Use install --dry-run to preview per-user installation." : "Managed directory: " + installation.Directory));
         checks.Add(new("USB discovery", devices.Count == 0 ? "info" : "ok", $"{devices.Count} mounted device(s). No write was attempted."));
         try
         {

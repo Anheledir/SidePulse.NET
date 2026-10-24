@@ -13,14 +13,16 @@ from verify_release import verify
 
 
 class ReleaseTests(unittest.TestCase):
-    def packages(self, root, corrupt=False, wrong_version=False):
+    def packages(self, root, corrupt=False, wrong_version=False, single_file=False, hybrid=False):
         for platform in ('win', 'linux', 'osx'):
             for arch in ('x64', 'arm64'):
                 runtime = f'{platform}-{arch}'
                 names = ['spn.exe' if platform == 'win' else 'spn', 'spn.dll',
                          'hostfxr.dll' if platform == 'win' else 'libhostfxr.dylib' if platform == 'osx' else 'libhostfxr.so']
+                if single_file and not hybrid:
+                    names = names[:1]
                 files = {name: name.encode() for name in names}
-                manifest = {'Format': 1, 'Version': '0.1.0-beta.2' if wrong_version else '0.1.0-beta.1',
+                manifest = {'Format': 2 if single_file else 1, 'Version': '0.1.0-beta.2' if wrong_version else '0.1.0-beta.1',
                             'Runtime': runtime, 'Files': [{'Path': name, 'Sha256': hashlib.sha256(data).hexdigest(), 'Mode': 493} for name, data in files.items()]}
                 files['sidepulse-install.json'] = json.dumps(manifest).encode()
                 if corrupt:
@@ -51,6 +53,15 @@ class ReleaseTests(unittest.TestCase):
             root = Path(directory)
             self.packages(root, corrupt=True)
             with self.assertRaisesRegex(ValueError, 'hash mismatch'):
+                verify(root, '0.1.0-beta.1')
+
+    def test_single_file_runtime_set_and_hybrid_rejection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.packages(root, single_file=True)
+            verify(root, '0.1.0-beta.1')
+            self.packages(root, single_file=True, hybrid=True)
+            with self.assertRaisesRegex(ValueError, 'Single-file release contains unexpected'):
                 verify(root, '0.1.0-beta.1')
 
     def test_project_and_package_version_must_agree(self):
