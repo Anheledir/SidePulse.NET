@@ -42,9 +42,9 @@ repositories with no activity may have scheduled workflows disabled by GitHub.
 
 ## Security and repository administration
 
-[SECURITY.md](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/SECURITY.md)
+[SECURITY.md](https://github.com/Anheledir/SidePulse.NET/blob/main/SECURITY.md)
 explains private reporting and trust boundaries. The
-[configuration record](https://github.com/Anheledir/SidePulse.NET/blob/implementation/first-preview/docs/repository-settings.md)
+[configuration record](https://github.com/Anheledir/SidePulse.NET/blob/main/docs/repository-settings.md)
 separates observed settings, source configuration and desired admin changes.
 Adding a workflow does not prove that repository-level security controls are on.
 
