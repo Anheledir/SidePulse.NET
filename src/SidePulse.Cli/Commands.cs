@@ -45,7 +45,7 @@ public sealed class DevicesCommand : Command<DevicesSettings>
 public class TargetSettings : CommandSettings
 {
     [CommandOption("--device <PATH>")]
-    [Description("Mounted directory or existing LEDS.LED path. Auto-selects a single discovered device.")]
+    [Description("Mounted directory or existing LEDS.LED path. Auto uses one USB device, then the saved default phone.")]
     public string? Device { get; init; }
     [CommandOption("--token-env <NAME>")]
     [Description("Environment variable holding an iPhone push token. Selects phone delivery.")]
@@ -68,20 +68,22 @@ public static class Delivery
     public static async Task Send(TargetSettings settings, LedProgram program, CancellationToken cancellationToken)
     {
         if (settings.DryRun) return;
-        if (settings.Phone is { } alias)
+        var target = OutputTarget.Resolve(settings.Device, settings.Phone, settings.TokenEnvironment,
+            DeviceTransport.Discover, () => File.Exists(LinkStore.DefaultPath) ? PhoneStores.Open().List() : []);
+        if (target.Transport == OutputTransport.Phone)
         {
-            var phone = PhoneStores.Open().Get(alias);
+            var phone = PhoneStores.Open().Get(target.Value);
             using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             await new PhoneBridge(client).SendAsync(phone.Token, program, cancellationToken);
         }
-        else if (settings.TokenEnvironment is { } variable)
+        else if (target.Transport == OutputTransport.TokenEnvironment)
         {
-            var token = Environment.GetEnvironmentVariable(variable);
+            var token = Environment.GetEnvironmentVariable(target.Value);
             if (string.IsNullOrWhiteSpace(token)) throw new ArgumentException("The selected token environment variable is empty.");
             using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             await new PhoneBridge(client).SendAsync(token, program, cancellationToken);
         }
-        else DeviceTransport.Write(DeviceTransport.Resolve(settings.Device), program);
+        else DeviceTransport.Write(target.Value, program);
     }
     public static void Receipt(TargetSettings settings, LedProgram program)
     {
