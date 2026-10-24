@@ -8,6 +8,8 @@ public sealed record OutputTarget(OutputTransport Transport, string Value)
     {
         if (new[] { device, phone, tokenEnvironment }.Count(value => value is not null) > 1)
             throw new ArgumentException("Choose one of --device, --token-env or --phone.");
+        if (new[] { device, phone, tokenEnvironment }.Any(value => value is not null && string.IsNullOrWhiteSpace(value)))
+            throw new ArgumentException("An explicit output must not be empty. Supply a device path, phone alias or token environment variable name.");
         if (device is not null) return new(OutputTransport.Device, device);
         if (phone is not null) return new(OutputTransport.Phone, phone);
         if (tokenEnvironment is not null) return new(OutputTransport.TokenEnvironment, tokenEnvironment);

@@ -22,6 +22,15 @@ public sealed class OutputTargetTests
     }
 
     [Fact]
+    public void EmptyExplicitOutputCannotBecomeAutomaticDeviceDiscovery()
+    {
+        Assert.Throws<ArgumentException>(() => OutputTarget.Resolve(" ", null, null,
+            () => throw new InvalidOperationException("Discovery must not run"), () => []));
+        Assert.Throws<ArgumentException>(() => OutputTarget.Resolve(null, "", null, () => [], () => []));
+        Assert.Throws<ArgumentException>(() => OutputTarget.Resolve(null, null, " ", () => [], () => []));
+    }
+
+    [Fact]
     public void OneMountedDeviceWinsWithoutAccessingPhoneStorage()
     {
         var target = OutputTarget.Resolve(null, null, null, () => [new("mounted/LEDS.LED", "SidePulse")],
