@@ -85,8 +85,14 @@ On Debian/Ubuntu, install `libsecret-tools`; desktop sessions commonly provide t
 keyring service. Headless Linux needs its own unlocked Secret Service session, or
 can use environment-token delivery without saved links. See [[Platforms]].
 
-The first linked phone becomes the default. Selection is explicit via `--phone`;
-commands without a phone option continue to discover USB devices.
+The first linked phone becomes the default. Without target options, state, write,
+animation apply and host delivery use exactly one mounted USB device; if none is
+found, they use the saved default phone (or the only saved phone). For example,
+`sidepulse-net state working` works with a paired default phone and no USB device.
+Multiple mounted devices require an explicit target. Multiple phones without a
+default require `--phone` or `link default <alias>`. Explicit `--device`, `--phone`
+and `--token-env` always take precedence. A failed selection, credential read or
+delivery never retries on a different output.
 
 ```powershell
 sidepulse-net link rename iphone personal
@@ -98,7 +104,8 @@ sidepulse-net doctor --json
 
 Aliases are case-insensitive and use 1–40 letters, digits, underscores or hyphens.
 `default` is reserved. Existing aliases and duplicate tokens are rejected.
-Removing a default link clears the default; it never silently selects another phone.
+Removing a default link clears the saved default. Automatic delivery can use the
+only remaining phone; with multiple remaining phones, choose a new default.
 Removing a link only removes the local credential, and does not revoke the token
 at the phone or bridge. Listing links and diagnostics never display tokens.
 `doctor` checks local runtime, mounted devices, DPAPI/storage and hook-directory
