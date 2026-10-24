@@ -13,7 +13,7 @@ an agent is working, waiting for input or finished.
 ## Preview functionality
 
 - Cursor menus, script-command review/copy/export, plain/quiet/JSON output.
-- Copilot CLI, Codex, Claude Code and Kiro CLI V3 hooks with shared status aggregation.
+- Copilot CLI, Codex, Claude Code, Kiro CLI V3 hooks and an OpenCode plugin with shared status aggregation.
 - Writable USB/SD LED output, iPhone linking and native protected credentials.
 - Dot/Pro animation simulation, custom editor, upstream patterns and state profiles.
 - Host lifecycle, bounded logs, diagnostics and phone aliases.
@@ -99,6 +99,7 @@ sidepulse-net agents install codex
 sidepulse-net agents install claude
 sidepulse-net agents install kiro
 sidepulse-net agents install copilot
+sidepulse-net agents install opencode
 sidepulse-net host start --phone default
 sidepulse-net host status
 sidepulse-net host stop

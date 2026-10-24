@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace SidePulse.Core;
 
-public enum AgentProvider { Copilot, Codex, Claude, Kiro }
+public enum AgentProvider { Copilot, Codex, Claude, Kiro, OpenCode }
 public sealed record AgentCapability(AgentProvider Provider, string Target, string[] Events, string Limitations);
 
 public static class AgentEvents
@@ -12,7 +12,8 @@ public static class AgentEvents
         new(AgentProvider.Copilot, "Copilot CLI", ["sessionStart", "userPromptSubmitted", "preToolUse", "postToolUse", "agentStop", "errorOccurred", "postToolUseFailure", "sessionEnd", "notification"], "Notification waiting signals; no permission decision hooks."),
         new(AgentProvider.Codex, "Codex local lifecycle hooks", ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Stop", "Interrupt", "SessionEnd"], "Review and trust installed hooks in Codex /hooks. Cloud orchestration is not supported."),
         new(AgentProvider.Claude, "Claude Code", ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "Stop", "StopFailure", "SessionEnd"], "Notification waiting signals can be delayed. Subagent events are ignored."),
-        new(AgentProvider.Kiro, "Kiro CLI V3 standalone hooks", ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd"], "No documented general permission-wait or error signal. CLI 2.x profiles are not edited.")
+        new(AgentProvider.Kiro, "Kiro CLI V3 standalone hooks", ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd"], "No documented general permission-wait or error signal. CLI 2.x profiles are not edited."),
+        new(AgentProvider.OpenCode, "OpenCode local event plugin", ["session.status", "session.created", "session.deleted", "session.error", "permission.asked", "permission.replied", "question.asked", "question.replied", "question.rejected"], "Idle includes cancellation and is not reported as successful completion. Restart OpenCode after plugin changes.")
     ];
     public static SessionEvent? Parse(AgentProvider provider, string name, string json, long? receivedAt = null)
     {
@@ -33,6 +34,20 @@ public static class AgentEvents
             if (!string.IsNullOrEmpty(Get("agent_id"))) return null;
             if (!Capabilities.Single(c => c.Provider == provider).Events.Contains(name)) return null;
             if (name == "SessionStart" && Get("source") == "compact") return null;
+            if (provider == AgentProvider.OpenCode)
+            {
+                AgentState? mapped = name switch
+                {
+                    "session.status" when Get("status") is "busy" or "retry" => AgentState.Working,
+                    "session.status" when Get("status") == "idle" => AgentState.Idle,
+                    "session.created" or "session.deleted" => AgentState.Idle,
+                    "session.error" => AgentState.Error,
+                    "permission.asked" or "question.asked" => AgentState.Waiting,
+                    "permission.replied" or "question.replied" or "question.rejected" => AgentState.Working,
+                    _ => null
+                };
+                return mapped.HasValue ? new(session, mapped.Value, receivedAt ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), provider) : null;
+            }
             var tool = Get("tool_name");
             AgentState? state = name switch
             {

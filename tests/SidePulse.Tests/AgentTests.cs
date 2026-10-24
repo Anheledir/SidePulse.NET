@@ -55,6 +55,11 @@ public sealed class AgentTests
             var json = generated.ToJsonString();
             Assert.DoesNotContain("permissionDecision", json);
             Assert.DoesNotContain("dangerously", json);
+            if (provider == AgentProvider.OpenCode)
+            {
+                Assert.Contains("shell: false", generated["plugin"]!.GetValue<string>());
+                continue;
+            }
             if (provider == AgentProvider.Kiro)
             {
                 Assert.Equal("v1", generated["version"]!.GetValue<string>());
@@ -151,6 +156,48 @@ public sealed class AgentTests
             Assert.False(File.Exists(target));
             File.WriteAllText(target, "{}");
             Assert.Throws<IOException>(() => installer.Install(target, AgentProvider.Kiro, fragment, false));
+        });
+    }
+    [Theory]
+    [InlineData("session.status", "busy", AgentState.Working)]
+    [InlineData("session.status", "retry", AgentState.Working)]
+    [InlineData("session.status", "idle", AgentState.Idle)]
+    [InlineData("permission.asked", "", AgentState.Waiting)]
+    [InlineData("question.asked", "", AgentState.Waiting)]
+    [InlineData("question.rejected", "", AgentState.Working)]
+    [InlineData("session.error", "", AgentState.Error)]
+    [InlineData("session.deleted", "", AgentState.Idle)]
+    public void OpenCodeMapsSanitizedEvents(string name, string status, AgentState state)
+    {
+        var payload = new JsonObject { ["session_id"] = "open", ["status"] = status }.ToJsonString();
+        var item = AgentEvents.Parse(AgentProvider.OpenCode, name, payload, 42)!;
+        Assert.Equal(state, item.State);
+        Assert.Equal(AgentProvider.OpenCode, item.Provider);
+        Assert.Equal(42, item.Timestamp);
+        Assert.Null(AgentEvents.Parse(AgentProvider.OpenCode, "session.status", "{\"session_id\":\"open\",\"status\":\"unknown\"}"));
+    }
+    [Fact]
+    public void OpenCodeOwnsOnlyItsPluginAndRefusesModifiedOrUnownedFiles()
+    {
+        WithDirectory(directory =>
+        {
+            var target = Path.Combine(directory, "sidepulse-net.js");
+            var installer = new HookInstallation(Path.Combine(directory, "manifests"));
+            var generated = HookConfiguration.Generate(AgentProvider.OpenCode, "C:\\O'Brien ü\\sidepulse-net.exe", true);
+            Assert.Equal("preview", installer.Install(target, AgentProvider.OpenCode, generated, true).State);
+            Assert.False(File.Exists(target));
+            installer.Install(target, AgentProvider.OpenCode, generated, false);
+            Assert.Equal(generated["plugin"]!.GetValue<string>(), File.ReadAllText(target));
+            Assert.Equal("installed", installer.Install(target, AgentProvider.OpenCode, generated, false).State);
+            Assert.Throws<IOException>(() => installer.Install(target, AgentProvider.OpenCode, HookConfiguration.Generate(AgentProvider.OpenCode, "/new/sidepulse-net", false), false));
+            File.AppendAllText(target, "// manual edit");
+            Assert.Throws<IOException>(() => installer.Uninstall(target, false));
+            File.WriteAllText(target, generated["plugin"]!.GetValue<string>());
+            installer.Uninstall(target, false);
+            Assert.False(File.Exists(target));
+            File.WriteAllText(target, "// user plugin");
+            Assert.Throws<IOException>(() => installer.Install(target, AgentProvider.OpenCode, generated, false));
+            Assert.Equal("// user plugin", File.ReadAllText(target));
         });
     }
     private static void WithDirectory(Action<string> action)

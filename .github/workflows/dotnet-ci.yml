@@ -101,6 +101,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/agent_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/opencode_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish and exercise self-contained previews
         shell: pwsh
         run: |
