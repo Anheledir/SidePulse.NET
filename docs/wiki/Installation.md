@@ -88,7 +88,7 @@ or PATH block is refused rather than overwritten. No user data deletion option i
 implied by uninstalling the executable.
 
 When invoked from the installed application, a copied helper waits for the
-calling process to exit. Quit the interactive session to allow it to finish.
+calling process to exit. Confirmed self-removal closes the interactive session.
 The command reports `scheduled`, not completed; the reported helper workspace
 contains `result.json` after completion and remains available for recovery.
 Removing from another portable copy completes directly. Locked executables or

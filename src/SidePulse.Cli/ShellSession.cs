@@ -66,7 +66,13 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
                         if (command[0] == "install" && AnsiConsole.Confirm("Add spn to your user PATH? The preview shows any shell-profile changes.", false)) command.Add("--add-to-path");
                         if (RunCommand([.. command, "--dry-run"]) != 0) continue;
                         var apply = Interactive.Choose("Review installation changes", [new(command[0] == "install" ? "Install" : "Remove"), new("Back")]);
-                        if (apply is not null && apply.Label != "Back") RunCommand(command.ToArray());
+                        if (apply is not null && apply.Label != "Back")
+                        {
+                            var installedDirectory = UserInstallation.ReadRecord()?.Directory;
+                            var removingThisSession = command[0] == "uninstall" && installedDirectory is not null
+                                && installedDirectory.Equals(Path.GetDirectoryName(Environment.ProcessPath), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                            if (RunCommand(command.ToArray()) == 0 && removingThisSession) return 0;
+                        }
                         continue;
                     }
                     var group = section switch { "Animations" => "animations", "Help & about" => "about", _ => section };

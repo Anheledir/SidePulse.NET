@@ -21,7 +21,12 @@ public sealed class InstallationTests
             File.WriteAllText(Path.Combine(Source, "unrelated-download.txt"), "do not install this");
             Manifest = new(2, "1.0.0", GitHubReleases.RuntimeIdentifier, [new(ApplicationIdentity.CurrentExecutable, InstallationManifest.Hash(exe), 493)]);
         }
-        public void Dispose() { File.Delete(UpdateTransaction.ReceiptPath(Target)); Directory.Delete(Root, true); }
+        public void Dispose()
+        {
+            var receipt = UpdateTransaction.ReceiptPath(Target);
+            if (File.Exists(receipt)) File.Delete(receipt);
+            Directory.Delete(Root, true);
+        }
     }
     [Fact]
     public async Task PreviewCreatesNothingAndInstallIsOwnedAndIdempotent()
