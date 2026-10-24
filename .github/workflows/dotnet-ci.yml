@@ -92,7 +92,7 @@ jobs:
       - name: Exercise CLI and local host with simulated hardware
         shell: pwsh
         run: |
-          $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
+          $binary = if ($IsWindows) { 'spn.exe' } else { 'spn' }
           python scripts/cli_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/terminal_smoke.py "src/SidePulse.Cli/bin/Release/net10.0/$binary"
@@ -122,7 +122,7 @@ jobs:
             python scripts/package_manifest.py $destination $rid $version
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             if ($rid -eq $native) {
-              $binary = if ($IsWindows) { 'sidepulse-net.exe' } else { 'sidepulse-net' }
+              $binary = if ($IsWindows) { 'spn.exe' } else { 'spn' }
               python scripts/cli_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               python scripts/animation_smoke.py "$destination/$binary"
@@ -133,16 +133,16 @@ jobs:
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             }
             if ($IsWindows) {
-              Compress-Archive -Path "$destination/*" -DestinationPath "artifacts/sidepulse-net-$rid.zip"
+              Compress-Archive -Path "$destination/*" -DestinationPath "artifacts/spn-$rid.zip"
             } else {
-              tar -czf "artifacts/sidepulse-net-$rid.tar.gz" -C $destination .
+              tar -czf "artifacts/spn-$rid.tar.gz" -C $destination .
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             }
           }
       - name: Upload platform previews
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: sidepulse-net-${{ runner.os }}-preview
+          name: spn-${{ runner.os }}-preview
           path: |
             artifacts/*.zip
             artifacts/*.tar.gz

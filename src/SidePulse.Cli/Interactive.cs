@@ -7,6 +7,8 @@ namespace SidePulse.Cli;
 public sealed record MenuItem(string Label, string[]? Arguments = null);
 public static class Interactive
 {
+    private static readonly Dictionary<string, int> Selections = new();
+    public static bool InSession { get; set; }
     public static string[]? Resolve(string[] args)
     {
         if (!TerminalMode.Interactive)
@@ -34,12 +36,12 @@ public static class Interactive
     public static MenuItem? Choose(string title, IReadOnlyList<MenuItem> items)
     {
         if (!TerminalMode.Interactive) throw new ArgumentException("This action requires an interactive terminal.");
-        var selected = 0;
+        var selected = InSession ? Math.Clamp(Selections.GetValueOrDefault(title), 0, items.Count - 1) : 0;
         MenuItem? result = null;
         IRenderable Draw()
         {
             var rows = items.Select((item, i) => (IRenderable)new Text((i == selected ? "> " : "  ") + item.Label, i == selected ? new Style(Color.Cyan1, decoration: Decoration.Bold) : Style.Plain)).ToList();
-            rows.Add(new Text("\n↑/↓ select · Enter continue · Esc back", new Style(Color.Grey)));
+            rows.Add(new Text(InSession ? "\n↑/↓ select · Enter continue · Esc back · / actions" : "\n↑/↓ select · Enter continue · Esc back", new Style(Color.Grey)));
             if (items[selected].Arguments is { } arguments) rows.Add(new Panel(new Text(TerminalMode.Command(arguments))).Header("Script command").Border(BoxBorder.Rounded));
             return new Panel(new Rows(rows)).Header(Markup.Escape(title)).Border(BoxBorder.Rounded);
         }
@@ -48,11 +50,14 @@ public static class Interactive
             live.Refresh();
             while (true)
             {
-                var key = Console.ReadKey(true).Key;
+                var input = Console.ReadKey(true);
+                var key = input.Key;
+                if (InSession && input.KeyChar == '/') throw new ActionPaletteRequested();
                 if (key == ConsoleKey.Escape) break;
                 if (key == ConsoleKey.Enter) { result = items[selected]; break; }
                 if (key == ConsoleKey.UpArrow) selected = (selected + items.Count - 1) % items.Count;
                 if (key == ConsoleKey.DownArrow) selected = (selected + 1) % items.Count;
+                if (InSession) Selections[title] = selected;
                 live.UpdateTarget(Draw()); live.Refresh();
             }
         });
@@ -74,7 +79,7 @@ public static class Interactive
             catch (ArgumentException ex) { Console.Error.WriteLine(ex.Message); shell = TerminalMode.Shell; }
         }
     }
-    private static List<string> Target()
+    internal static List<string> Target()
     {
         var kind = Pick("Output target", new[] { "USB / SD", "Saved phone", "Token environment variable" });
         return kind switch
@@ -84,7 +89,7 @@ public static class Interactive
             _ => ["--device", Path.GetFullPath(Ask("Mount directory or LEDS.LED path"))]
         };
     }
-    private static string[]? Build(string group)
+    internal static string[]? Build(string group)
     {
         if (group == "update")
         {

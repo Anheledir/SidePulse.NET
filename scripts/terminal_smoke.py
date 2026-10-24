@@ -25,7 +25,7 @@ def main(executable):
         class Terminal:
             def __init__(self, args):
                 self.master, slave = pty.openpty()
-                fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 120, 0, 0))
+                fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 30, 100, 0, 0))
                 self.process = subprocess.Popen([executable, *args], stdin=slave, stdout=slave, stderr=slave, env=env)
                 os.close(slave)
                 self.output = b''
@@ -41,7 +41,7 @@ def main(executable):
                             break
                         self.output += data
                         if needle in self.output:
-                            self.output = b''
+                            self.output = self.output[self.output.index(needle) + len(needle):]
                             return
                     if self.process.poll() is not None:
                         break
@@ -69,11 +69,45 @@ def main(executable):
 
         menu = Terminal([])
         try:
-            menu.until('About')
-            menu.send(b'\x1b[A\r')  # wrap from Animations to About
+            menu.until('Quit')
+            menu.send(b'\x1b')  # Esc at Home never exits.
+            menu.until('Quit')
+            menu.send(b'/')
+            menu.until('Actions')
+            menu.send(b'Help\r')  # searchable action palette
+            for _ in range(4):
+                menu.until('Manufacturer website')
+                if _ == 0:
+                    menu.send(b'\x1b[B' * 4)
+                menu.send(b'\r')
+                menu.until('Peter Kuhar')
             menu.until('Manufacturer website')
-            menu.send(b'\x1b[B' * 4 + b'\r')
-            menu.until('Peter Kuhar')
+            menu.send(b'\x1b')
+            menu.until('Quit')
+            menu.send(b'/')
+            menu.until('Actions')
+            menu.send(b'Send\r')
+            menu.until('Preview mode: off')
+            menu.send(b'\r')  # Live send fails; remain in the same workspace.
+            menu.until('No output found')
+            menu.until('Preview mode: off')
+            fcntl.ioctl(menu.master, termios.TIOCSWINSZ, struct.pack('HHHH', 20, 60, 0, 0))
+            menu.send(b'\x1b[B' * 6 + b'\r')  # Enable Preview once.
+            for _ in range(5):
+                menu.until('Preview mode: on')
+                menu.send(b'\r')
+                menu.until('LED preview')
+            menu.until('Preview mode: on')
+            menu.send(b'\x1b')
+            menu.until('Quit')
+            menu.send(b'\x1b[B' * 2 + b'\r')  # Devices & phones
+            menu.until('Mounted devices')
+            menu.send(b'\r')
+            menu.until('Completed: devices')
+            menu.until('Mounted devices')
+            menu.send(b'\x1b')
+            menu.until('Quit')
+            menu.send(b'\x1b[A' * 3 + b'\r')  # explicit Quit
             menu.finish()
         finally:
             if menu.process.poll() is None:
@@ -101,7 +135,7 @@ def main(executable):
         finally:
             if editor.process.poll() is None:
                 editor.process.kill()
-        print('Cursor menus, Spectre preview controls and editor save passed.')
+        print('Persistent navigation, ten actions across three sections, failed-send recovery, narrow preview and editor save passed.')
 
 
 if __name__ == '__main__':

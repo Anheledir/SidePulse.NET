@@ -2,7 +2,9 @@
 
 An unofficial .NET companion for SidePulse, with a Spectre.Console terminal interface.
 
-**Status: first C# implementation preview. Feature parity and hardware validation are still in progress.**
+**Status: 0.1.0-beta.1 candidate. Feature parity and hardware validation are still in progress.**
+
+The command is **`spn`**. See [beta notes and alpha migration](docs/releases/0.1.0-beta.1.md).
 
 Start with [Getting started](docs/wiki/Getting-Started.md) for build, USB, phone delivery and Copilot CLI instructions.
 
@@ -12,7 +14,7 @@ an agent is working, waiting for input or finished.
 
 ## Preview functionality
 
-- Cursor menus, script-command review/copy/export, plain/quiet/JSON output.
+- Persistent interactive session, repeatable Send state, action palette, script-command copy/export and plain/quiet/JSON output.
 - Copilot CLI, Codex, Claude Code, Kiro CLI V3 hooks and an OpenCode plugin with shared status aggregation.
 - Writable USB/SD LED output, iPhone linking and native protected credentials.
 - Dot/Pro animation simulation, custom editor, upstream patterns and state profiles.
@@ -69,7 +71,7 @@ The solution contains a portable core, a Spectre.Console CLI and behavioral test
 Command groups include `devices`, `state`, `write`, `dashboard`, `host`, `agents`,
 `link`, `animations`, `profiles`, `about`, `docs` and `update`. Use `--help` for
 subcommands and `--dry-run` where supported before changing files or sending a program.
-The command name `sidepulse-net` coexists with the existing Python port.
+The command name `spn` coexists with the existing Python port.
 
 QR pairing and protected token storage use DPAPI on Windows, Keychain on macOS
 and Secret Service on Linux. Login-startup registration, firmware-verified simulator parity,
@@ -94,15 +96,15 @@ Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). License: [MIT](LICENSE).
 ## Agent setup and background use
 
 ```shell
-sidepulse-net agents install codex --dry-run
-sidepulse-net agents install codex
-sidepulse-net agents install claude
-sidepulse-net agents install kiro
-sidepulse-net agents install copilot
-sidepulse-net agents install opencode
-sidepulse-net host start --phone default
-sidepulse-net host status
-sidepulse-net host stop
+spn agents install codex --dry-run
+spn agents install codex
+spn agents install claude
+spn agents install kiro
+spn agents install copilot
+spn agents install opencode
+spn host start --phone default
+spn host status
+spn host stop
 ```
 
 See [agent integrations](docs/wiki/Agent-Integrations.md) for provider capabilities,
@@ -112,15 +114,15 @@ for logs and foreground use. Additional providers remain planned.
 ## Animation studio and scripting
 
 ```shell
-sidepulse-net animations preview cyan-roll --both
-sidepulse-net animations edit --file custom.LED --model dot
-sidepulse-net animations validate custom.LED --quiet
-sidepulse-net animations import personal --file custom.LED --model dot
-sidepulse-net animations apply personal --model dot --phone default --brightness 40
-sidepulse-net profiles set personal --state Working --pattern cyan-roll --brightness 40
-sidepulse-net host start --phone default --profile personal --model dot
-sidepulse-net about credits
-sidepulse-net about licenses --full
+spn animations preview cyan-roll --both
+spn animations edit --file custom.LED --model dot
+spn animations validate custom.LED --quiet
+spn animations import personal --file custom.LED --model dot
+spn animations apply personal --model dot --phone default --brightness 40
+spn profiles set personal --state Working --pattern cyan-roll --brightness 40
+spn host start --phone default --profile personal --model dot
+spn about credits
+spn about licenses --full
 ```
 
 Run with no arguments in a terminal for arrow-key menus and guided setup. Review
@@ -137,11 +139,11 @@ licensed dependency credits. Browser opening requires `--open`.
 ## Verified updates
 
 ```shell
-sidepulse-net update check
-sidepulse-net update install --prerelease --dry-run
-sidepulse-net host stop
-sidepulse-net update install --prerelease
-sidepulse-net update status
+spn update check
+spn update install --prerelease --dry-run
+spn host stop
+spn update install --prerelease
+spn update status
 ```
 
 The updater selects a published GitHub release for the current OS/architecture,
@@ -150,4 +152,6 @@ exits. A backup and startup probe support rollback. Use self-contained packages
 with an installation manifest; older previews need one manual upgrade. Stop the
 host first and confirm `installed` before restarting it. See
 [updating and recovery](docs/wiki/Updating.md). Adding the release workflow does not
-publish a release; a matching version tag explicitly triggers publishing.
+publish a release. A matching version tag or manual Prepare release run on `main`
+builds and verifies six archives, then creates an unpublished release draft.
+Publishing the reviewed draft is a separate explicit release action.

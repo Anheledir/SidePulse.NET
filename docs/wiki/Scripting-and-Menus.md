@@ -1,12 +1,24 @@
 # Scripting and interactive menus
 
-In a terminal, `sidepulse-net` opens an arrow-key menu. Bare groups `animations`,
+In a terminal, `spn` opens a persistent session. Bare groups `animations`,
 `profiles`, `agents`, `host`, `link`, and `about` open their respective menus.
-Up/Down select, Enter continues, Escape goes back. Fully specified commands always
+Up/Down select, Enter continues, Escape goes back one section. Escape at Home
+stays in the session; choose Quit to leave. `/` opens a searchable action palette.
+Commands and recoverable failures return to their section. Ctrl+C cancels a
+running command; when idle it exits. The detached host keeps running.
+Fully specified commands always
 execute directly. The legacy `host --phone default` shorthand remains supported.
 
-Guided actions display a single-line script command before running. Review offers
-Run, Copy command, Choose shell and Back. PowerShell and Bash quoting preserve
+Send state retains its output choice and Preview mode until the session ends.
+Choose a state and press Enter to send; there is no repeated target or Run/Copy
+dialog. Change output lists mounted devices and saved phones; Auto selects one
+USB device, otherwise the default/sole saved phone. Preview never sends.
+Saved application-wide UI preferences and first-run installation are still planned.
+
+Advanced guided actions display a single-line script command before running. Review offers
+Run, Copy command, Choose shell and Back. Simple arguments remain unquoted.
+Portable commands use the executable's absolute path when it is not on PATH;
+quoted PowerShell executable paths include the invocation operator. PowerShell and Bash quoting preserve
 literal values; CMD export rejects values it cannot safely represent. Clipboard
 support uses the OS clipboard or installed `wl-copy` / `xclip`; otherwise copy the
 printed line. Secrets are represented by phone aliases or environment variable
@@ -35,15 +47,15 @@ Raw `write` retains envelope-only validation for forward compatibility; use
 `--`; literal values containing a flag should be passed after `--` where supported.
 
 ```sh
-sidepulse-net animations validate --file build.LED --quiet
-sidepulse-net animations preview --file build.LED --model dot --at 500 --json
-sidepulse-net state Working --phone default --quiet
-sidepulse-net devices --json
-sidepulse-net about credits --json
-sidepulse-net about licenses --full
-sidepulse-net about github
-sidepulse-net about github --open
-sidepulse-net docs --offline
+spn animations validate --file build.LED --quiet
+spn animations preview --file build.LED --model dot --at 500 --json
+spn state Working --phone default --quiet
+spn devices --json
+spn about credits --json
+spn about licenses --full
+spn about github
+spn about github --open
+spn docs --offline
 ```
 
 `about` includes manufacturer, project and upstream links, credits, dependency

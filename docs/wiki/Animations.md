@@ -7,15 +7,15 @@ output requires an explicit model. File transport still requires writable storag
 this feature does not add direct USB or SD read transports.
 
 ```sh
-sidepulse-net animations list
-sidepulse-net animations preview cyan-roll --model dot
-sidepulse-net animations preview --file custom.LED --model pro
-sidepulse-net animations preview --file custom.LED --both
-sidepulse-net animations validate custom.LED --quiet
-sidepulse-net animations edit --file custom.LED --model dot
-sidepulse-net animations import personal --file custom.LED --model dot
-sidepulse-net animations export personal --model dot --output exported.LED
-sidepulse-net animations apply personal --model dot --phone default --brightness 40
+spn animations list
+spn animations preview cyan-roll --model dot
+spn animations preview --file custom.LED --model pro
+spn animations preview --file custom.LED --both
+spn animations validate custom.LED --quiet
+spn animations edit --file custom.LED --model dot
+spn animations import personal --file custom.LED --model dot
+spn animations export personal --model dot --output exported.LED
+spn animations apply personal --model dot --phone default --brightness 40
 ```
 
 The editor supports guided color, per-LED color/hold, off, roll, brightness,
@@ -48,10 +48,10 @@ preview runs for 10 seconds by default; `--seconds` permits up to 600 seconds.
 ## Agent state profiles
 
 ```sh
-sidepulse-net profiles set personal --state Working --pattern cyan-roll --brightness 40
-sidepulse-net profiles set personal --state Waiting --pattern amber-pulse
-sidepulse-net profiles show personal --json
-sidepulse-net host start --phone default --profile personal --model dot
+spn profiles set personal --state Working --pattern cyan-roll --brightness 40
+spn profiles set personal --state Waiting --pattern amber-pulse
+spn profiles show personal --json
+spn host start --phone default --profile personal --model dot
 ```
 
 Unassigned states retain the original status patterns. Profile brightness applies

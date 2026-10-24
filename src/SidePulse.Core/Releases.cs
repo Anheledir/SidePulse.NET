@@ -49,7 +49,7 @@ public sealed class GitHubReleases(HttpClient client)
     public const string ChecksumsName = "SHA256SUMS";
     public const long MaximumArchiveBytes = 512L * 1024 * 1024;
     public static string RuntimeIdentifier => (OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : OperatingSystem.IsLinux() ? "linux" : throw new PlatformNotSupportedException("Self-update supports Windows, macOS and Linux.")) + "-" + (RuntimeInformation.ProcessArchitecture switch { Architecture.X64 => "x64", Architecture.Arm64 => "arm64", _ => throw new PlatformNotSupportedException("Self-update supports x64 and ARM64.") });
-    public static string AssetName(string runtime) => "sidepulse-net-" + runtime + (runtime.StartsWith("win-", StringComparison.Ordinal) ? ".zip" : ".tar.gz");
+    public static string AssetName(string runtime) => ApplicationIdentity.Command + "-" + runtime + (runtime.StartsWith("win-", StringComparison.Ordinal) ? ".zip" : ".tar.gz");
     private async Task<HttpResponseMessage> Get(Uri uri, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);

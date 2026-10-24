@@ -9,17 +9,17 @@ and limitations. Unknown providers/events are not guessed from terminal text.
 ## Setup, inspection and removal
 
 ```shell
-sidepulse-net agents list
-sidepulse-net agents install copilot --dry-run
-sidepulse-net agents install copilot
-sidepulse-net agents install codex
-sidepulse-net agents install claude
-sidepulse-net agents install kiro
-sidepulse-net agents install opencode --dry-run
-sidepulse-net agents install opencode
-sidepulse-net agents status claude --json
-sidepulse-net agents uninstall claude --dry-run
-sidepulse-net agents uninstall claude
+spn agents list
+spn agents install copilot --dry-run
+spn agents install copilot
+spn agents install codex
+spn agents install claude
+spn agents install kiro
+spn agents install opencode --dry-run
+spn agents install opencode
+spn agents status claude --json
+spn agents uninstall claude --dry-run
+spn agents uninstall claude
 ```
 
 Run the published executable, or supply its absolute path with `--exe`.
@@ -88,10 +88,10 @@ These are passive status hooks: their output never contains policy decisions.
 ## OpenCode
 
 ```shell
-sidepulse-net agents install opencode
-sidepulse-net host start --phone default
-sidepulse-net agents status opencode --json
-sidepulse-net agents uninstall opencode --dry-run
+spn agents install opencode
+spn host start --phone default
+spn agents status opencode --json
+spn agents uninstall opencode --dry-run
 ```
 
 Restart OpenCode after installation. The plugin subscribes to native events:

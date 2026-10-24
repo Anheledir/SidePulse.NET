@@ -37,4 +37,4 @@ Firmware and raw USB parity require a dedicated compatibility investigation.
 
 Confirm dashboard interaction details, packaging/name availability, service
 lifetime and startup behavior, aggregation policy and how long completion stays
-visible. .NET 10 LTS and separate `sidepulse-net` command are the proposed defaults.
+visible. .NET 10 LTS and separate `spn` command are the proposed defaults.

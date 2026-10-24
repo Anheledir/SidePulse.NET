@@ -155,7 +155,7 @@ public sealed class PairPhoneCommand : AsyncCommand<PairPhoneSettings>
                 var phone = await pairing;
                 store.Add(phone);
                 AnsiConsole.MarkupLine("[green]Linked and saved securely:[/] " + Markup.Escape(phone.Name));
-                AnsiConsole.WriteLine($"Try: sidepulse-net state done --phone {phone.Alias}");
+                AnsiConsole.WriteLine($"Try: spn state done --phone {phone.Alias}");
                 return 0;
             }
             finally

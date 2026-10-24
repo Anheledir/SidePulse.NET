@@ -63,7 +63,7 @@ public sealed class UpdateTests
     {
         using var temp = new Temp();
         var bytes = Encoding.UTF8.GetBytes("not really a zip; hash verification is independent");
-        var asset = "sidepulse-net-win-x64.zip";
+        var asset = "spn-win-x64.zip";
         var digest = Convert.ToHexString(SHA256.HashData(bytes));
         var checksum = Encoding.UTF8.GetBytes(digest + "  " + asset + "\n");
         var corrupt = false;
@@ -183,7 +183,7 @@ public sealed class UpdateTests
         var manifest = await UpdatePackage.Extract(archive, destination, "2.0.0", "linux-x64");
         manifest.Verify(destination, true);
         Assert.Equal("2.0.0", manifest.Version);
-        Assert.True(File.Exists(System.IO.Path.Combine(destination, "sidepulse-net")));
+        Assert.True(File.Exists(System.IO.Path.Combine(destination, "spn")));
     }
     [Fact]
     public async Task TarLinksAreRejected()
@@ -231,7 +231,7 @@ public sealed class UpdateTests
     {
         using var fixture = new Installation(); var plan = fixture.Prepare();
         using (var gate = UpdateTransaction.Lock(fixture.Target)) await Assert.ThrowsAsync<IOException>(() => UpdateTransaction.Apply(plan, (_, _) => Task.CompletedTask));
-        File.WriteAllText(System.IO.Path.Combine(fixture.Target, "sidepulse-net.dll"), "local change");
+        File.WriteAllText(System.IO.Path.Combine(fixture.Target, "spn.dll"), "local change");
         await Assert.ThrowsAsync<IOException>(() => UpdateTransaction.Apply(plan, (_, _) => Task.CompletedTask));
         Assert.Equal("1.0.0", InstallationManifest.Read(fixture.Target).Version);
     }
@@ -245,7 +245,7 @@ public sealed class UpdateTests
         Assert.Throws<IOException>(() => fixture.Prepare());
         Assert.Equal("personal", File.ReadAllText(System.IO.Path.Combine(fixture.Target, "custom.txt")));
     }
-    private static object Release(string tag, bool draft = false, bool prerelease = true) => new { tag_name = tag, draft, prerelease, assets = new[] { new { name = "sidepulse-net-linux-x64.tar.gz", size = 10 }, new { name = "SHA256SUMS", size = 100 } } };
+    private static object Release(string tag, bool draft = false, bool prerelease = true) => new { tag_name = tag, draft, prerelease, assets = new[] { new { name = "spn-linux-x64.tar.gz", size = 10 }, new { name = "SHA256SUMS", size = 100 } } };
     private static HttpResponseMessage Json(string text) => new(HttpStatusCode.OK) { Content = new StringContent(text) };
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> handler) : HttpMessageHandler
     { protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(handler(request)); }
@@ -272,7 +272,7 @@ public sealed class UpdateTests
             foreach (var (directory, version) in new[] { (Target, "1.0.0"), (Stage, "2.0.0") })
             {
                 Directory.CreateDirectory(directory);
-                foreach (var name in new[] { "sidepulse-net", "sidepulse-net.dll", "libhostfxr.so" }) File.WriteAllText(System.IO.Path.Combine(directory, name), name + version);
+                foreach (var name in new[] { "spn", "spn.dll", "libhostfxr.so" }) File.WriteAllText(System.IO.Path.Combine(directory, name), name + version);
                 WriteManifest(directory, version);
             }
         }

@@ -6,11 +6,11 @@ listener. The phone token remains in the native credential store or process
 environment; it is never added to command arguments or logs.
 
 ```shell
-sidepulse-net host start --phone default
-sidepulse-net host status
-sidepulse-net host status --json
-sidepulse-net host logs --tail 30
-sidepulse-net host stop
+spn host start --phone default
+spn host status
+spn host status --json
+spn host logs --tail 30
+spn host stop
 ```
 
 Choose a target with `--phone`, `--device` or `--token-env`. `--dry-run` runs the
@@ -29,10 +29,10 @@ in memory only and begin unknown after restart.
 For a foreground session:
 
 ```shell
-sidepulse-net host run --phone default
+spn host run --phone default
 ```
 
-The earlier `sidepulse-net host --phone default` shorthand remains supported.
+The earlier `spn host --phone default` shorthand remains supported.
 Ctrl+C stops the foreground host. Upgrade by stopping the old host before
 replacing binaries; older preview hosts do not implement the control protocol.
 A process started from a terminal is detached on Unix. Windows launches it without
@@ -53,7 +53,7 @@ not evidence of actual LED or phone receipt.
 
 ## Clearing abandoned sessions
 
-`sidepulse-net host reset` clears all tracked sessions and queues the Unknown
+`spn host reset` clears all tracked sessions and queues the Unknown
 pattern. Use `--json` for a machine-readable snapshot. This explicitly discards
 history; it does not mark tasks successful or stop agent processes. The next agent
 event establishes fresh state. A stopped host returns exit code 1.

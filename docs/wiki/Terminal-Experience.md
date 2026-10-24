@@ -31,12 +31,12 @@ complete desktop-style terminal UI framework.
 ## Proposed commands
 
 ```powershell
-sidepulse-net
-sidepulse-net link
-sidepulse-net state working
-sidepulse-net devices list --json
-sidepulse-net integrations install copilot
-sidepulse-net doctor
+spn
+spn link
+spn state working
+spn devices list --json
+spn integrations install copilot
+spn doctor
 ```
 
 These commands are proposals, not installation instructions. Reserve `--quiet`,

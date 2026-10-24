@@ -1,23 +1,30 @@
 using Spectre.Console;
 using Spectre.Console.Cli;
 using SidePulse.Cli;
+using SidePulse.Core;
 
 args = TerminalMode.Configure(args);
-try { args = Interactive.Resolve(args) ?? []; }
-catch (Exception ex) { return TerminalMode.Error(ex); }
-if (args.Length == 0) return 0;
-
-if (args.Length == 1 && args[0] == "update") args = ["update", "check"];
-
-// Preserve the original foreground shorthand while adding lifecycle subcommands.
-if (args.Length >= 1 && args[0] == "host" && (args.Length == 1 || args[1].StartsWith('-') && args[1] is not "--help" and not "-h"))
-    args = new[] { "host", "run" }.Concat(args.Skip(1)).ToArray();
+var session = ShellSession.ShouldStart(args);
+if (!session)
+{
+    try { args = Interactive.Resolve(args) ?? []; }
+    catch (Exception ex) { return TerminalMode.Error(ex); }
+    if (args.Length == 0) return 0;
+}
+static string[] Normalize(string[] command)
+{
+    if (command.Length == 1 && command[0] == "update") return ["update", "check"];
+    if (command.Length >= 1 && command[0] == "host" && (command.Length == 1 || command[1].StartsWith('-') && command[1] is not "--help" and not "-h"))
+        return new[] { "host", "run" }.Concat(command.Skip(1)).ToArray();
+    return command;
+}
+args = Normalize(args);
 using var logOutput = HostLogs.Redirect(args);
 var app = new CommandApp();
 app.Configure(config =>
 {
     config.ConfigureConsole(AnsiConsole.Console);
-    config.SetApplicationName("sidepulse-net");
+    config.SetApplicationName(ApplicationIdentity.Command);
     config.SetApplicationVersion(ProjectInfo.Version);
     config.AddBranch("animations", animations =>
     {
@@ -94,5 +101,5 @@ app.Configure(config =>
         return TerminalMode.Error(exception);
     });
 });
-try { return app.Run(args); }
+try { return session ? new ShellSession((command, token) => app.Run(Normalize(command), token)).Run(args) : app.Run(args); }
 catch (Exception ex) { return TerminalMode.Error(ex); }

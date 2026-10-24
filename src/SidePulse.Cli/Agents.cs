@@ -24,7 +24,7 @@ public sealed class AgentSettings : CommandSettings
     [CommandArgument(0, "<AGENT>")]
     public AgentProvider Agent { get; init; }
     [CommandOption("--exe <PATH>")]
-    public string Executable { get; init; } = Environment.ProcessPath ?? "sidepulse-net";
+    public string Executable { get; init; } = Environment.ProcessPath ?? ApplicationIdentity.Command;
     [CommandOption("--config <PATH>")]
     [Description("Explicit provider configuration file; useful for project-scoped or isolated setup.")]
     public string? Config { get; init; }

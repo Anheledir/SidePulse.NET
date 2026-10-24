@@ -6,7 +6,7 @@ import sys
 
 def write(directory):
     root = Path(directory)
-    expected = {f'sidepulse-net-{platform}-{arch}' + ('.zip' if platform == 'win' else '.tar.gz')
+    expected = {f'spn-{platform}-{arch}' + ('.zip' if platform == 'win' else '.tar.gz')
                 for platform in ('win', 'linux', 'osx') for arch in ('x64', 'arm64')}
     archives = {p.name: p for p in root.iterdir() if p.is_file() and (p.name.endswith('.zip') or p.name.endswith('.tar.gz'))}
     if set(archives) != expected:

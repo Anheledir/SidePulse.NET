@@ -31,7 +31,7 @@ public static class Updater
     }
     public static async Task Probe(string target, string version, CancellationToken cancellationToken)
     {
-        var executable = Path.Combine(target, OperatingSystem.IsWindows() ? "sidepulse-net.exe" : "sidepulse-net");
+        var executable = Path.Combine(target, ApplicationIdentity.CurrentExecutable);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); deadline.CancelAfter(TimeSpan.FromSeconds(15));
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true, CreateNoWindow = true, WorkingDirectory = target };
         start.ArgumentList.Add("--version");
@@ -69,10 +69,10 @@ public sealed class UpdateInstallCommand : AsyncCommand<UpdateSettings>
         if (!check.Available) throw new IOException("The release is missing a package or SHA256SUMS; update refused.");
         if (settings.DryRun) { Updater.Print(settings, new { state = "planned", check }, $"Would download, verify and install {check.Asset} ({check.Latest}) into {Updater.Target}."); return 0; }
         var installed = InstallationManifest.Read(Updater.Target);
-        if (installed.Version != ProjectInfo.Version || installed.Runtime != check.Runtime || Path.GetFileName(Environment.ProcessPath) != (OperatingSystem.IsWindows() ? "sidepulse-net.exe" : "sidepulse-net")) throw new IOException("Self-update requires an unmodified self-contained release installation.");
+        if (installed.Version != ProjectInfo.Version || installed.Runtime != check.Runtime || Path.GetFileName(Environment.ProcessPath) != (ApplicationIdentity.CurrentExecutable)) throw new IOException("Self-update requires an unmodified self-contained release installation.");
         using var gate = UpdateTransaction.Lock(Updater.Target);
         if (UpdateTransaction.Status(Updater.Target)?.State is "prepared" or "scheduled" or "applying" or "recovery-required") throw new IOException("An update is pending or needs recovery. Run update status first.");
-        if ((await HostControl.Request("status", deadline.Token)).Running) throw new IOException("Stop the agent host with 'sidepulse-net host stop' before updating, then restart it after update status reports installed.");
+        if ((await HostControl.Request("status", deadline.Token)).Running) throw new IOException("Stop the agent host with 'spn host stop' before updating, then restart it after update status reports installed.");
         var working = Path.GetFullPath(Environment.CurrentDirectory).TrimEnd(Path.DirectorySeparatorChar);
         if (working.Equals(Updater.Target, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) || working.StartsWith(Updater.Target + Path.DirectorySeparatorChar, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) throw new IOException("Run the update from outside the installation directory so its folder can be replaced.");
         installed.Verify(Updater.Target, false);
@@ -89,14 +89,14 @@ public sealed class UpdateInstallCommand : AsyncCommand<UpdateSettings>
             await UpdatePackage.Extract(archive, stage, release.Version, check.Runtime, deadline.Token);
             using var current = Process.GetCurrentProcess();
             plan = UpdateTransaction.Prepare(Updater.Target, stage, job, release.Version, check.Runtime, current.Id, current.StartTime.ToUniversalTime().Ticks);
-            var helper = Path.Combine(job, "helper", OperatingSystem.IsWindows() ? "sidepulse-net.exe" : "sidepulse-net");
+            var helper = Path.Combine(job, "helper", ApplicationIdentity.CurrentExecutable);
             var start = new ProcessStartInfo(helper) { UseShellExecute = OperatingSystem.IsWindows(), WindowStyle = ProcessWindowStyle.Hidden, CreateNoWindow = true,
                 RedirectStandardInput = !OperatingSystem.IsWindows(), RedirectStandardOutput = !OperatingSystem.IsWindows(), RedirectStandardError = !OperatingSystem.IsWindows(), WorkingDirectory = job };
             foreach (var argument in new[] { "internal-update", "--plan", Path.Combine(job, "plan.json") }) start.ArgumentList.Add(argument);
             UpdateTransaction.Receipt(plan, "scheduled");
             using var process = Process.Start(start) ?? throw new IOException("Could not launch the update helper.");
             if (!OperatingSystem.IsWindows()) process.StandardInput.Close();
-            Updater.Print(settings, new { state = "scheduled", version = plan.Version, receipt = plan.Receipt, backup = plan.Backup }, "Verified update scheduled. It will apply after this command exits. Run 'sidepulse-net update status' to confirm before restarting the host.");
+            Updater.Print(settings, new { state = "scheduled", version = plan.Version, receipt = plan.Receipt, backup = plan.Backup }, "Verified update scheduled. It will apply after this command exits. Run 'spn update status' to confirm before restarting the host.");
             return 0;
         }
         catch

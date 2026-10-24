@@ -69,7 +69,7 @@ public sealed class HostStartSettings : TargetSettings
     [CommandOption("--profile <NAME>")] public string? Profile { get; init; }
     [CommandOption("--model <MODEL>")] public DeviceModel? Model { get; init; }
     [CommandOption("--exe <PATH>")]
-    public string Executable { get; init; } = Environment.ProcessPath ?? "sidepulse-net";
+    public string Executable { get; init; } = Environment.ProcessPath ?? ApplicationIdentity.Command;
     public override ValidationResult Validate()
     {
         var result = base.Validate();

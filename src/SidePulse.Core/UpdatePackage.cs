@@ -31,8 +31,8 @@ public sealed record InstallationManifest(int Format, string Version, string Run
             Relative(file.Path);
             if (file.Path.Equals(Filename, StringComparison.OrdinalIgnoreCase) || !names.Add(file.Path) || !Regex.IsMatch(file.Sha256, "^[0-9a-fA-F]{64}$", RegexOptions.CultureInvariant) || file.Mode is < 0 or > 511) throw new IOException("Invalid installation file entry.");
         }
-        var exe = manifest.Runtime.StartsWith("win-", StringComparison.Ordinal) ? "sidepulse-net.exe" : "sidepulse-net";
-        if (!names.Contains(exe) || !names.Contains("sidepulse-net.dll") || !names.Contains(manifest.Runtime.StartsWith("win-", StringComparison.Ordinal) ? "hostfxr.dll" : manifest.Runtime.StartsWith("osx-", StringComparison.Ordinal) ? "libhostfxr.dylib" : "libhostfxr.so")) throw new IOException("Self-update requires a complete self-contained application package.");
+        var exe = ApplicationIdentity.Executable(manifest.Runtime.StartsWith("win-", StringComparison.Ordinal));
+        if (!names.Contains(exe) || !names.Contains(ApplicationIdentity.Assembly) || !names.Contains(manifest.Runtime.StartsWith("win-", StringComparison.Ordinal) ? "hostfxr.dll" : manifest.Runtime.StartsWith("osx-", StringComparison.Ordinal) ? "libhostfxr.dylib" : "libhostfxr.so")) throw new IOException("Self-update requires a complete self-contained application package.");
         return manifest;
     }
     public void Verify(string directory, bool rejectExtras)

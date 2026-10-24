@@ -9,8 +9,8 @@ public static class HookConfiguration
     public static string Executable(string path)
     {
         path = Path.GetFullPath(path);
-        if (!File.Exists(path) || !Path.GetFileNameWithoutExtension(path).Equals("sidepulse-net", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Use --exe with a published sidepulse-net executable.");
+        if (!File.Exists(path) || !Path.GetFileNameWithoutExtension(path).Equals(ApplicationIdentity.Command, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Use --exe with a published spn executable.");
         return path;
     }
     public static (string Bash, string PowerShell) Commands(string exe, AgentProvider provider, string name)

@@ -26,8 +26,8 @@ Provide a migration report and a way to undo new configuration.
 
 ## Commands and conflicts
 
-Initially expose `sidepulse-net`. An optional `sidepulse` alias is a deliberate
-choice because the user already has a working Python command by that name.
+The executable is `spn` (`spn.exe` on Windows). No compatibility command or alias
+is distributed. The Python `sidepulse` installation remains independent.
 Detect competing hooks and writers in diagnostics, and offer targeted repair
 rather than automatically deleting another application's configuration.
 

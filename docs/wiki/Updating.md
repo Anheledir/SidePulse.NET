@@ -1,14 +1,14 @@
 # Checking and installing updates
 
 ```sh
-sidepulse-net update
-sidepulse-net update check --json
-sidepulse-net update check --prerelease
-sidepulse-net update install --prerelease --dry-run
-sidepulse-net host stop
-sidepulse-net update install --prerelease
-sidepulse-net update status --json
-sidepulse-net host start --phone default
+spn update
+spn update check --json
+spn update check --prerelease
+spn update install --prerelease --dry-run
+spn host stop
+spn update install --prerelease
+spn update status --json
+spn host start --phone default
 ```
 
 A bare `update` checks only in scripts; in a terminal it offers a cursor menu.
@@ -32,8 +32,10 @@ signatures or protection against a compromised publisher account.
 Self-update requires a self-contained distribution containing `sidepulse-install.json`.
 Source builds, framework-dependent binaries, older previews without that manifest,
 modified application files and symlinked installations require manual installation.
-The first updater-capable preview is 0.1.0-alpha.6. Older versions must be upgraded
-manually once. The install directory and its parent must be writable; the updater
+The beta uses `spn` package/executable names. Upgrade from alpha manually using
+the release migration instructions; the old updater is not compatible with this
+rename. Subsequent beta updates retain the verified directory-package format.
+The install directory and its parent must be writable; the updater
 never elevates privileges. Package-manager installations should use that manager.
 
 Run the command from outside the installation directory. Stop the agent host and
