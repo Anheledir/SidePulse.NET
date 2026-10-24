@@ -35,7 +35,7 @@ def verify(directory, version):
                             raise ValueError('Release contains a link or special file')
                         add(files, item.name.removeprefix('./'), package.extractfile(item).read())
             manifest = json.loads(files.pop('sidepulse-install.json'))
-            if manifest['Format'] != 1 or manifest['Version'] != version or manifest['Runtime'] != runtime:
+            if manifest['Format'] not in (1, 2) or manifest['Version'] != version or manifest['Runtime'] != runtime:
                 raise ValueError('Release manifest version, runtime or format mismatch')
             entries = manifest['Files']
             if len({entry['Path'] for entry in entries}) != len(entries):
@@ -44,6 +44,10 @@ def verify(directory, version):
                 raise ValueError('Release manifest does not describe the complete archive')
             required = {'spn.exe' if platform == 'win' else 'spn', 'spn.dll',
                         'hostfxr.dll' if platform == 'win' else 'libhostfxr.dylib' if platform == 'osx' else 'libhostfxr.so'}
+            if manifest['Format'] == 2:
+                required = {'spn.exe' if platform == 'win' else 'spn'}
+                if set(files) != required:
+                    raise ValueError('Single-file release contains unexpected loose files')
             if not required.issubset(files) or any(name in files for name in ('sidepulse-net', 'sidepulse-net.exe', 'sidepulse-net.dll')):
                 raise ValueError('Release executable/runtime layout is incomplete or contains the removed command')
             for entry in entries:

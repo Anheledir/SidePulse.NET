@@ -229,7 +229,7 @@ public sealed class HookConfigSettings : CommandSettings
 {
     [CommandOption("--exe <PATH>")]
     [Description("Absolute path to a published spn executable.")]
-    public string Executable { get; init; } = Environment.ProcessPath ?? ApplicationIdentity.Command;
+    public string Executable { get; init; } = Installation.PreferredExecutable;
     [CommandOption("--output <PATH>")]
     [Description("Create a NEW hook file. Existing files are never overwritten. Otherwise prints JSON.")]
     public string? OutputPath { get; init; }

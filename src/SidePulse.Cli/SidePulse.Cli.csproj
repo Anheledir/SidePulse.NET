@@ -2,7 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>spn</AssemblyName>
-    <Version>0.1.0-beta.1</Version>
+    <Version>0.1.0-beta.2</Version>
+    <PublishSingleFile Condition="'$(RuntimeIdentifier)' != ''">true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>embedded</DebugType>
     <Description>Unofficial SidePulse companion</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
@@ -17,9 +20,9 @@
     <EmbeddedResource Include="../../LICENSE" Link="Licenses/SidePulse.NET/LICENSE" />
     <EmbeddedResource Include="../../NOTICE.md" Link="Licenses/SidePulse.NET/NOTICE.md" />
     <EmbeddedResource Include="Dependencies.json" />
-    <Content Include="../../docs/wiki/Updating.md" Link="docs/Updating.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../../docs/wiki/Animations.md" Link="docs/Animations.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../../docs/wiki/Scripting-and-Menus.md" Link="docs/Scripting-and-Menus.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../../docs/releases/0.1.0-beta.1.md" Link="docs/Beta.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="../../docs/wiki/*.md" LogicalName="SidePulse.Cli.Docs.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../docs/releases/$(Version).md" LogicalName="SidePulse.Cli.Docs.Beta.md" />
+    <EmbeddedResource Include="$(NetCoreRoot)LICENSE.txt" LogicalName="SidePulse.Cli.Licenses.dotnet.LICENSE.txt" />
+    <EmbeddedResource Include="$(NetCoreRoot)ThirdPartyNotices.txt" LogicalName="SidePulse.Cli.Licenses.dotnet.ThirdPartyNotices.txt" />
   </ItemGroup>
 </Project>

@@ -2,9 +2,10 @@
 
 An unofficial .NET companion for SidePulse, with a Spectre.Console terminal interface.
 
-**Status: 0.1.0-beta.1 candidate. Feature parity and hardware validation are still in progress.**
+**Status: 0.1.0-beta.2 candidate. Feature parity and hardware validation are still in progress.**
 
-The command is **`spn`**. See [beta notes and alpha migration](docs/releases/0.1.0-beta.1.md).
+The command is **`spn`**. See [single-file beta notes](docs/releases/0.1.0-beta.2.md)
+and [per-user installation/PATH](docs/wiki/Installation.md).
 
 Start with [Getting started](docs/wiki/Getting-Started.md) for build, USB, phone delivery and Copilot CLI instructions.
 

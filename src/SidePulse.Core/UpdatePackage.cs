@@ -24,7 +24,7 @@ public sealed record InstallationManifest(int Format, string Version, string Run
         if (!File.Exists(path) || new FileInfo(path).Length > 4 * 1024 * 1024) throw new IOException("This installation has no supported update manifest. Install a current self-contained preview/release manually first.");
         var manifest = JsonSerializer.Deserialize<InstallationManifest>(File.ReadAllText(path), Json) ?? throw new IOException("Invalid installation manifest.");
         _ = new ReleaseVersion(manifest.Version);
-        if (manifest.Format != 1 || manifest.Runtime is not ("win-x64" or "win-arm64" or "osx-x64" or "osx-arm64" or "linux-x64" or "linux-arm64") || manifest.Files is null || manifest.Files.Count is < 1 or > 10000) throw new IOException("Invalid installation manifest.");
+        if (manifest.Format is not (1 or 2) || manifest.Runtime is not ("win-x64" or "win-arm64" or "osx-x64" or "osx-arm64" or "linux-x64" or "linux-arm64") || manifest.Files is null || manifest.Files.Count is < 1 or > 10000) throw new IOException("Invalid installation manifest.");
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in manifest.Files)
         {
@@ -32,7 +32,11 @@ public sealed record InstallationManifest(int Format, string Version, string Run
             if (file.Path.Equals(Filename, StringComparison.OrdinalIgnoreCase) || !names.Add(file.Path) || !Regex.IsMatch(file.Sha256, "^[0-9a-fA-F]{64}$", RegexOptions.CultureInvariant) || file.Mode is < 0 or > 511) throw new IOException("Invalid installation file entry.");
         }
         var exe = ApplicationIdentity.Executable(manifest.Runtime.StartsWith("win-", StringComparison.Ordinal));
-        if (!names.Contains(exe) || !names.Contains(ApplicationIdentity.Assembly) || !names.Contains(manifest.Runtime.StartsWith("win-", StringComparison.Ordinal) ? "hostfxr.dll" : manifest.Runtime.StartsWith("osx-", StringComparison.Ordinal) ? "libhostfxr.dylib" : "libhostfxr.so")) throw new IOException("Self-update requires a complete self-contained application package.");
+        if (manifest.Format == 2)
+        {
+            if (names.Count != 1 || !names.Contains(exe)) throw new IOException("A single-file package must contain exactly its executable.");
+        }
+        else if (!names.Contains(exe) || !names.Contains(ApplicationIdentity.Assembly) || !names.Contains(manifest.Runtime.StartsWith("win-", StringComparison.Ordinal) ? "hostfxr.dll" : manifest.Runtime.StartsWith("osx-", StringComparison.Ordinal) ? "libhostfxr.dylib" : "libhostfxr.so")) throw new IOException("Self-update requires a complete self-contained application package.");
         return manifest;
     }
     public void Verify(string directory, bool rejectExtras)

@@ -26,6 +26,9 @@ app.Configure(config =>
     config.ConfigureConsole(AnsiConsole.Console);
     config.SetApplicationName(ApplicationIdentity.Command);
     config.SetApplicationVersion(ProjectInfo.Version);
+    config.AddCommand<InstallCommand>("install").WithDescription("Install for this user; optionally configure user PATH.");
+    config.AddCommand<UninstallCommand>("uninstall").WithDescription("Remove the managed installation while retaining settings and phone links.");
+    config.AddCommand<InternalUninstallCommand>("internal-uninstall").IsHidden();
     config.AddBranch("animations", animations =>
     {
         animations.SetDescription("Create, validate, preview and send Dot / Pro LED patterns.");

@@ -4,15 +4,15 @@
 
 # Getting started with the beta candidate
 
-The executable is `spn` (`spn.exe` on Windows). Extract the complete platform
-archive into a permanent user-owned directory. Run `.\spn.exe` in PowerShell or
-`./spn` on Unix unless that directory is on PATH. The beta release notes include
-the manual alpha migration; no old-name alias is distributed.
+The executable is `spn` (`spn.exe` on Windows). Run `.\spn.exe` in PowerShell or
+`./spn` on Unix, then optionally `install --dry-run` and `install --add-to-path`.
+Single-file builds contain the runtime, docs and licenses; keep the small manifest
+for portable self-updates, or let install create it. See [[Installation]].
 
 USB/SD writes, iPhone pairing/protected links, shared agent host, animation studio,
 managed integrations and a persistent interactive session are implemented.
-Automatic per-user installation/PATH setup, saved UI preferences, remaining
-upstream integrations and physical firmware acceptance remain open.
+Per-user installation and optional PATH setup are available. Saved UI preferences,
+remaining upstream integrations and physical firmware acceptance remain open.
 
 ## Build and run
 

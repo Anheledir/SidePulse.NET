@@ -52,9 +52,21 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
                     }
                     if (section == "Settings")
                     {
-                        var action = Interactive.Choose(section, [new("Diagnostics", ["doctor"]), new("Updates"), new("Profiles"), new("Back")]);
+                        var action = Interactive.Choose(section, [new("Diagnostics", ["doctor"]), new("Installation"), new("Updates"), new("Profiles"), new("Back")]);
                         if (action is null || action.Label == "Back") { section = Back(); continue; }
                         if (action.Arguments is { } command) RunCommand(command); else { parents.Push(section); section = action.Label.ToLowerInvariant(); }
+                        continue;
+                    }
+                    if (section == "installation")
+                    {
+                        var action = Interactive.Choose("Installation", [new("Status", ["install", "--status"]), new("Install for this user"), new("Uninstall"), new("Back")]);
+                        if (action is null || action.Label == "Back") { section = Back(); continue; }
+                        if (action.Arguments is { } direct) { RunCommand(direct); continue; }
+                        var command = new List<string> { action.Label == "Uninstall" ? "uninstall" : "install" };
+                        if (command[0] == "install" && AnsiConsole.Confirm("Add spn to your user PATH? The preview shows any shell-profile changes.", false)) command.Add("--add-to-path");
+                        if (RunCommand([.. command, "--dry-run"]) != 0) continue;
+                        var apply = Interactive.Choose("Review installation changes", [new(command[0] == "install" ? "Install" : "Remove"), new("Back")]);
+                        if (apply is not null && apply.Label != "Back") RunCommand(command.ToArray());
                         continue;
                     }
                     var group = section switch { "Animations" => "animations", "Help & about" => "about", _ => section };
@@ -113,7 +125,7 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
         }
     }
 
-    private void RunCommand(string[] args)
+    private int RunCommand(string[] args)
     {
         using var cancellation = new CancellationTokenSource();
         ConsoleCancelEventHandler cancel = (_, input) => { input.Cancel = true; cancellation.Cancel(); };
@@ -123,8 +135,9 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
             var result = execute(args, cancellation.Token);
             recent = result == 0 ? "Completed: " + string.Join(' ', args.Take(2)) : "Action failed. Correct the input or output and retry.";
             Console.WriteLine(recent);
+            return result;
         }
-        catch (OperationCanceledException) { recent = "Cancelled."; Console.WriteLine(recent); }
+        catch (OperationCanceledException) { recent = "Cancelled."; Console.WriteLine(recent); return 1; }
         finally { Console.CancelKeyPress -= cancel; }
     }
 }

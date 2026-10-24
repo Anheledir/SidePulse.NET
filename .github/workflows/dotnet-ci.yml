@@ -47,6 +47,7 @@ jobs:
     timeout-minutes: 20
     env:
       SIDEPULSE_NATIVE_VAULT_TESTS: '1'
+      SIDEPULSE_INSTALL_SYSTEM_TESTS: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -111,18 +112,15 @@ jobs:
           foreach ($architecture in @('x64', 'arm64')) {
             $rid = "$prefix-$architecture"
             $destination = "artifacts/$rid"
-            dotnet publish src/SidePulse.Cli -c Release -r $rid --self-contained true -o $destination
+            dotnet publish src/SidePulse.Cli -c Release -r $rid --self-contained true -p:NuGetLockFilePath=obj/packages.publish.lock.json -o $destination
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            Copy-Item LICENSE,NOTICE.md $destination
-            Copy-Item -Recurse third-party $destination
-            New-Item -ItemType Directory -Force "$destination/third-party/dotnet" | Out-Null
-            Copy-Item "$env:DOTNET_ROOT/LICENSE.txt","$env:DOTNET_ROOT/ThirdPartyNotices.txt" "$destination/third-party/dotnet"
-            Copy-Item docs/wiki/Getting-Started.md $destination
             $version = ([xml](Get-Content src/SidePulse.Cli/SidePulse.Cli.csproj -Raw)).Project.PropertyGroup.Version
             python scripts/package_manifest.py $destination $rid $version
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             if ($rid -eq $native) {
               $binary = if ($IsWindows) { 'spn.exe' } else { 'spn' }
+              python scripts/install_smoke.py "$destination/$binary"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               python scripts/cli_smoke.py "$destination/$binary"
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               python scripts/animation_smoke.py "$destination/$binary"
