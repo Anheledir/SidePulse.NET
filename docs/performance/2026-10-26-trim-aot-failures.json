@@ -1,0 +1,81 @@
+{
+  "raw-trim": {
+    "executable_bytes": 18049412,
+    "analysis_diagnostics": {
+      "IL2026": 40,
+      "IL2104": 1
+    },
+    "probes": [
+      {
+        "arguments": [
+          "--version"
+        ],
+        "exit_code": 0,
+        "stderr_first_line": "",
+        "stdout": "0.1.0-beta.2\n"
+      },
+      {
+        "arguments": [
+          "--version",
+          "--no-interactive"
+        ],
+        "exit_code": -6,
+        "stderr_first_line": "Unhandled exception. Spectre.Console.Cli.CommandRuntimeException: Could not get settings type for command of type 'SidePulse.Cli.PreferencesCommand'.",
+        "stdout": ""
+      },
+      {
+        "arguments": [
+          "state",
+          "working",
+          "--dry-run",
+          "--json"
+        ],
+        "exit_code": -6,
+        "stderr_first_line": "Unhandled exception. Spectre.Console.Cli.CommandRuntimeException: Could not get settings type for command of type 'SidePulse.Cli.PreferencesCommand'.",
+        "stdout": ""
+      }
+    ],
+    "functional": false
+  },
+  "aot": {
+    "executable_bytes": 13734648,
+    "analysis_diagnostics": {
+      "IL2026": 62,
+      "IL3050": 66,
+      "IL2104": 1,
+      "IL3000": 1,
+      "IL3053": 1
+    },
+    "probes": [
+      {
+        "arguments": [
+          "--version"
+        ],
+        "exit_code": 0,
+        "stderr_first_line": "",
+        "stdout": "0.1.0-beta.2\n"
+      },
+      {
+        "arguments": [
+          "--version",
+          "--no-interactive"
+        ],
+        "exit_code": -6,
+        "stderr_first_line": "Unhandled exception. Spectre.Console.Cli.CommandRuntimeException: Could not get settings type for command of type 'SidePulse.Cli.PreferencesCommand'.",
+        "stdout": ""
+      },
+      {
+        "arguments": [
+          "state",
+          "working",
+          "--dry-run",
+          "--json"
+        ],
+        "exit_code": -6,
+        "stderr_first_line": "Unhandled exception. Spectre.Console.Cli.CommandRuntimeException: Could not get settings type for command of type 'SidePulse.Cli.PreferencesCommand'.",
+        "stdout": ""
+      }
+    ],
+    "functional": false
+  }
+}
