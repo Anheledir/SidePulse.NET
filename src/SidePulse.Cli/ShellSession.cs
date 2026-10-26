@@ -4,6 +4,8 @@ using Spectre.Console;
 namespace SidePulse.Cli;
 
 public sealed class ActionPaletteRequested : Exception;
+public sealed class FormCancelled : Exception;
+public sealed class SessionQuitRequested : Exception;
 
 /// <summary>Owns navigation; command execution happens only after menu rendering ends.</summary>
 public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
@@ -11,7 +13,7 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
     private static readonly MenuItem[] Home = [new("Send state"), new("Animations"), new("Devices & phones"),
         new("Agents & host"), new("Settings"), new("Help & about"), new("Quit")];
     private static readonly string[] Groups = ["about", "animations", "agents", "link", "host", "profiles", "update"];
-    private readonly List<string> target = [];
+    private readonly List<string> target = new(PreferenceStore.Default.Read().OutputArguments);
     private readonly Stack<string> parents = new();
     private bool preview;
     private string? recent;
@@ -29,8 +31,7 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
                 {
                     if (section is null)
                     {
-                        if (recent is not null) Console.WriteLine(recent);
-                        var action = Interactive.Choose("SidePulse.NET · Home", Home);
+                        var action = Interactive.Choose("SidePulse.NET · Home", Home, HomeContext());
                         if (action is null) continue; // Home Esc is navigation, never Quit.
                         if (action.Label == "Quit") return 0;
                         section = action.Label;
@@ -52,18 +53,19 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
                     }
                     if (section == "Settings")
                     {
-                        var action = Interactive.Choose(section, [new("Diagnostics", ["doctor"]), new("Installation"), new("Updates"), new("Profiles"), new("Back")]);
+                        var action = Interactive.Choose(section, [new("Preferences"), new("Diagnostics", ["doctor"]), new("Installation"), new("Updates"), new("Profiles"), new("Back")]);
                         if (action is null || action.Label == "Back") { section = Back(); continue; }
                         if (action.Arguments is { } command) RunCommand(command); else { parents.Push(section); section = action.Label.ToLowerInvariant(); }
                         continue;
                     }
+                    if (section == "preferences") { EditPreferences(); section = Back(); continue; }
                     if (section == "installation")
                     {
                         var action = Interactive.Choose("Installation", [new("Status", ["install", "--status"]), new("Install for this user"), new("Uninstall"), new("Back")]);
                         if (action is null || action.Label == "Back") { section = Back(); continue; }
                         if (action.Arguments is { } direct) { RunCommand(direct); continue; }
                         var command = new List<string> { action.Label == "Uninstall" ? "uninstall" : "install" };
-                        if (command[0] == "install" && AnsiConsole.Confirm("Add spn to your user PATH? The preview shows any shell-profile changes.", false)) command.Add("--add-to-path");
+                        if (command[0] == "install" && Interactive.Confirm("Add spn to your user PATH? The preview shows any shell-profile changes.", false)) command.Add("--add-to-path");
                         if (RunCommand([.. command, "--dry-run"]) != 0) continue;
                         var apply = Interactive.Choose("Review installation changes", [new(command[0] == "install" ? "Install" : "Remove"), new("Back")]);
                         if (apply is not null && apply.Label != "Back")
@@ -79,12 +81,13 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
                     var next = Interactive.Build(group);
                     if (next is null) section = Back(); else RunCommand(next);
                 }
+                catch (SessionQuitRequested) { return 0; }
+                catch (FormCancelled) { recent = "Cancelled · input retained."; }
                 catch (ActionPaletteRequested)
                 {
-                    // Spectre's prompt owns the terminal only after the previous Live is disposed.
+                    // The previous live renderer is disposed before opening the palette.
                     var previous = section;
-                    section = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Actions").EnableSearch()
-                        .AddChoices(Home.Select(item => item.Label).Prepend("Back")));
+                    section = Interactive.Choose("Actions", Home.Prepend(new MenuItem("Back")).ToArray(), search: true)?.Label ?? "Back";
                     if (section == "Quit") return 0;
                     if (section == "Back") section = previous;
                     else parents.Clear();
@@ -105,29 +108,87 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
     {
         while (true)
         {
-            var items = new[] { AgentState.Working, AgentState.Waiting, AgentState.Done, AgentState.Error, AgentState.Idle, AgentState.Unknown }.Select(state => new MenuItem(state.ToString(), ["state", state.ToString(), .. target, .. (preview ? new[] { "--dry-run" } : Array.Empty<string>())])).ToList();
+            var settings = PreferenceStore.Default.Read();
+            string[] appearance = ["--brightness", settings.Brightness.ToString(), .. (settings.Profile is null ? new[] { "--no-profile" } : new[] { "--profile", settings.Profile, "--model", settings.Model!.Value.ToString() })];
+            var items = new[] { AgentState.Working, AgentState.Waiting, AgentState.Done, AgentState.Error, AgentState.Idle, AgentState.Unknown }.Select(state => new MenuItem(state.ToString(), ["state", state.ToString(), .. target, .. appearance, .. (preview ? new[] { "--dry-run" } : Array.Empty<string>())])).ToList();
             items.AddRange([new(preview ? "Preview mode: on" : "Preview mode: off"), new("Change output"), new("Back")]);
             var selected = Interactive.Choose("Send state · " + (preview ? "Preview" : "Live") + " · " + (target.Count == 0 ? "Auto: USB, then default phone" : string.Join(' ', target)), items);
             if (selected is null || selected.Label == "Back") return;
             if (selected.Arguments is { } command) { RunCommand(command); continue; }
             if (selected.Label.StartsWith("Preview mode:", StringComparison.Ordinal)) { preview = !preview; continue; }
-            var output = Interactive.Choose("Output", [new("Auto: USB, then default phone"), new("USB / SD"), new("Saved phone"), new("Back")]);
-            if (output is null || output.Label == "Back") continue;
-            if (output.Label.StartsWith("Auto:", StringComparison.Ordinal)) { target.Clear(); continue; }
-            if (output.Label == "Saved phone")
+            ChangeOutput();
+        }
+    }
+    private void ChangeOutput()
+    {
+        var output = Interactive.Choose("Output", [new("Auto: USB, then default phone"), new("USB / SD"), new("Saved phone"), new("Back")]);
+        if (output is null || output.Label == "Back") return;
+        if (output.Label.StartsWith("Auto:", StringComparison.Ordinal)) { SaveOutput([]); return; }
+        if (output.Label == "Saved phone")
+        {
+            var phones = File.Exists(LinkStore.DefaultPath) ? PhoneStores.Open().List() : [];
+            if (phones.Count == 0) { Console.WriteLine("No saved phones. Pair one under Devices & phones."); return; }
+            var phone = Interactive.Choose("Saved phones", phones.Select(item => new MenuItem(item.Name + " (" + item.Alias + ")", ["--phone", item.Alias])).ToArray());
+            if (phone?.Arguments is { } choice) { SaveOutput(choice); }
+        }
+        else
+        {
+            var devices = DeviceTransport.Discover();
+            if (devices.Count == 0) { Console.WriteLine("No mounted devices. Connect SidePulse or select a phone."); return; }
+            var device = Interactive.Choose("Mounted devices", devices.Select(item => new MenuItem(item.Label, ["--device", item.Path])).ToArray());
+            if (device?.Arguments is { } choice) { SaveOutput(choice); }
+        }
+    }
+
+    private void SaveOutput(string[] choice)
+    {
+        var current = PreferenceStore.Default.Read();
+        PreferenceStore.Default.Save(current with { Device = choice.FirstOrDefault() == "--device" ? choice[1] : null, Phone = choice.FirstOrDefault() == "--phone" ? choice[1] : null });
+        target.Clear(); target.AddRange(choice);
+    }
+    private string HomeContext()
+    {
+        var settings = PreferenceStore.Default.Read();
+        string host;
+        try
+        {
+            var snapshot = HostControl.Request("status", CancellationToken.None, TimeSpan.FromMilliseconds(300)).GetAwaiter().GetResult();
+            host = snapshot.Running ? $"running · {snapshot.State} · {snapshot.Sessions.Count} sessions" : "stopped";
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException or UnauthorizedAccessException) { host = "not responding · see Agents & host"; }
+        return $"Output: {settings.OutputDescription}\nBrightness: {settings.Brightness}% · Profile: {settings.Profile ?? "built-in"} · Shell: {TerminalMode.Shell}\nHost: {host}\nLast action: {recent ?? "none this session"}";
+    }
+    private void EditPreferences()
+    {
+        while (true)
+        {
+            var current = PreferenceStore.Default.Read();
+            var action = Interactive.Choose("Preferences", [new("Show settings", ["settings", "show"]), new("Change output"), new("Brightness"), new("Animation profile"), new("Export shell"), new("Back")]);
+            if (action is null || action.Label == "Back") return;
+            if (action.Arguments is { } command) { RunCommand(command); continue; }
+            if (action.Label == "Change output") { ChangeOutput(); continue; }
+            if (action.Label == "Brightness")
             {
-                var phones = File.Exists(LinkStore.DefaultPath) ? PhoneStores.Open().List() : [];
-                if (phones.Count == 0) { Console.WriteLine("No saved phones. Pair one under Devices & phones."); continue; }
-                var phone = Interactive.Choose("Saved phones", phones.Select(item => new MenuItem(item.Name + " (" + item.Alias + ")", ["--phone", item.Alias])).ToArray());
-                if (phone?.Arguments is { } choice) { target.Clear(); target.AddRange(choice); }
+                var text = Interactive.Ask("Brightness 0..100", current.Brightness.ToString());
+                if (!int.TryParse(text, out var brightness) || brightness is < 0 or > 100) { Console.WriteLine("Enter a number from 0 to 100."); continue; }
+                current = current with { Brightness = brightness };
             }
-            else
+            if (action.Label == "Export shell") current = current with { Shell = Interactive.Pick("Export shell", new[] { "powershell", "bash", "cmd" }) };
+            if (action.Label == "Animation profile")
             {
-                var devices = DeviceTransport.Discover();
-                if (devices.Count == 0) { Console.WriteLine("No mounted devices. Connect SidePulse or select a phone."); continue; }
-                var device = Interactive.Choose("Mounted devices", devices.Select(item => new MenuItem(item.Label, ["--device", item.Path])).ToArray());
-                if (device?.Arguments is { } choice) { target.Clear(); target.AddRange(choice); }
+                var kind = Interactive.Choose("Animation profile", [new("Built-in states"), new("Saved profile"), new("Back")]);
+                if (kind is null || kind.Label == "Back") continue;
+                if (kind.Label == "Built-in states") current = current with { Profile = null };
+                else
+                {
+                    var name = Interactive.Ask("Profile name", current.Profile);
+                    var model = Interactive.Pick("LED layout", Enum.GetValues<DeviceModel>());
+                    _ = AnimationLibrary.ResolveProfile(name, model, current.Device);
+                    current = current with { Profile = name, Model = model };
+                }
             }
+            PreferenceStore.Default.Save(current);
+            recent = "Settings saved.";
         }
     }
 

@@ -34,6 +34,9 @@ def main(executable):
                 needle = text.encode('utf-8')
                 deadline = time.monotonic() + 10
                 while time.monotonic() < deadline:
+                    if needle in self.output:
+                        self.output = self.output[self.output.index(needle) + len(needle):]
+                        return
                     if select.select([self.master], [], [], 0.1)[0]:
                         try:
                             data = os.read(self.master, 65536)
@@ -112,6 +115,44 @@ def main(executable):
         finally:
             if menu.process.poll() is None:
                 menu.process.kill()
+
+        settings = Terminal([])
+        try:
+            settings.until('Last action:')
+            settings.until('Quit')
+            settings.send(b'\x1b[B' * 4 + b'\r')
+            settings.until('Preferences')
+            settings.send(b'\r')
+            settings.until('Show settings')
+            settings.send(b'\x1b[B' * 2 + b'\r')
+            settings.until('input retained')
+            settings.send(b'\x15' + b'42\x03')
+            settings.until('Show settings')
+            settings.send(b'\r')
+            settings.until('input retained')
+            settings.send(b'\r')
+            settings.until('Show settings')
+            settings.send(b'\x1b')
+            settings.until('Diagnostics')
+            settings.send(b'\x1b')
+            settings.until('Brightness: 42%')
+            settings.until('Quit')
+            settings.send(b'\x1b[B' * 2 + b'\r')
+            settings.finish()
+        finally:
+            if settings.process.poll() is None:
+                settings.process.kill()
+        import json
+        assert json.loads((root / 'config' / 'settings.json').read_text())['Brightness'] == 42
+        restarted = Terminal([])
+        try:
+            restarted.until('Brightness: 42%')
+            restarted.until('Quit')
+            restarted.send(b'\x03')
+            restarted.finish()
+        finally:
+            if restarted.process.poll() is None:
+                restarted.process.kill()
 
         file = root / 'custom.LED'
         editor = Terminal(['animations', 'edit', '--file', str(file), '--model', 'dot'])

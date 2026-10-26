@@ -26,6 +26,7 @@ app.Configure(config =>
     config.ConfigureConsole(AnsiConsole.Console);
     config.SetApplicationName(ApplicationIdentity.Command);
     config.SetApplicationVersion(ProjectInfo.Version);
+    config.AddCommand<PreferencesCommand>("settings").WithDescription("Show, set or reset persistent non-secret defaults.");
     config.AddCommand<InstallCommand>("install").WithDescription("Install for this user; optionally configure user PATH.");
     config.AddCommand<UninstallCommand>("uninstall").WithDescription("Remove the managed installation while retaining settings and phone links.");
     config.AddCommand<InternalUninstallCommand>("internal-uninstall").IsHidden();

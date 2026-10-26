@@ -12,7 +12,7 @@ public static class TerminalMode
     public static bool Json { get; private set; }
     public static bool Interactive { get; private set; }
     public static bool ColorEnabled { get; private set; }
-    public static string Shell => OperatingSystem.IsWindows() ? "powershell" : "bash";
+    public static string Shell => PreferenceStore.Default.Read().Shell ?? (OperatingSystem.IsWindows() ? "powershell" : "bash");
     public static string[] Configure(string[] args)
     {
         // Global flags are deliberately accepted before or after subcommands.

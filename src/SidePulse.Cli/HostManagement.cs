@@ -12,10 +12,10 @@ namespace SidePulse.Cli;
 public sealed record HostSnapshot(bool Running, int? ProcessId, AgentState State, IReadOnlyList<SessionView> Sessions, int ProtocolVersion = 1);
 public static class HostControl
 {
-    public static async Task<HostSnapshot> Request(string command, CancellationToken cancellationToken)
+    public static async Task<HostSnapshot> Request(string command, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(TimeSpan.FromSeconds(2));
+        deadline.CancelAfter(timeout ?? TimeSpan.FromSeconds(2));
         using var pipe = new NamedPipeClientStream(".", LocalPipe.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         try { await pipe.ConnectAsync(deadline.Token); }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return new(false, null, AgentState.Unknown, []); }
@@ -67,6 +67,8 @@ public sealed class HostStopCommand : AsyncCommand<HostActionSettings>
 public sealed class HostStartSettings : TargetSettings
 {
     [CommandOption("--profile <NAME>")] public string? Profile { get; init; }
+    [CommandOption("--no-profile")] public bool NoProfile { get; init; }
+    [CommandOption("--brightness <PERCENT>")] public int? Brightness { get; init; }
     [CommandOption("--model <MODEL>")] public DeviceModel? Model { get; init; }
     [CommandOption("--exe <PATH>")]
     public string Executable { get; init; } = Installation.PreferredExecutable;
@@ -82,7 +84,9 @@ public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
     {
         var existing = await HostControl.Request("status", cancellationToken);
         if (existing.Running) { if (settings.Json) Output.Print(existing); else AnsiConsole.WriteLine("Host is already running. Stop it before changing its target."); return 0; }
-        _ = AnimationLibrary.ResolveProfile(settings.Profile, settings.Model, settings.Device);
+        var preferences = PreferenceStore.Default.Read();
+        _ = AnimationLibrary.ResolveProfile(settings.NoProfile ? null : settings.Profile ?? preferences.Profile, settings.Model ?? preferences.Model, settings.Device ?? preferences.Device);
+        if (settings.Brightness is < 0 or > 100 || settings.NoProfile && settings.Profile is not null) throw new ArgumentException("Choose brightness 0..100 and either --profile or --no-profile.");
         var exe = HookConfiguration.Executable(settings.Executable);
         var directory = Path.Combine(Path.GetDirectoryName(LinkStore.DefaultPath)!, "host");
         if (OperatingSystem.IsWindows()) Directory.CreateDirectory(directory);
@@ -95,6 +99,8 @@ public sealed class HostStartCommand : AsyncCommand<HostStartSettings>
         if (settings.Device is { } device) { info.ArgumentList.Add("--device"); info.ArgumentList.Add(Path.GetFullPath(device)); }
         if (settings.Phone is { } phone) { info.ArgumentList.Add("--phone"); info.ArgumentList.Add(phone); }
         if (settings.TokenEnvironment is { } variable) { info.ArgumentList.Add("--token-env"); info.ArgumentList.Add(variable); }
+        if (settings.NoProfile) info.ArgumentList.Add("--no-profile");
+        if (settings.Brightness is { } brightness) { info.ArgumentList.Add("--brightness"); info.ArgumentList.Add(brightness.ToString()); }
         if (settings.Profile is { } profile) { info.ArgumentList.Add("--profile"); info.ArgumentList.Add(profile); }
         if (settings.Model is { } model) { info.ArgumentList.Add("--model"); info.ArgumentList.Add(model.ToString()); }
         if (settings.DryRun) info.ArgumentList.Add("--dry-run");
