@@ -29,7 +29,7 @@ public static class ProjectInfo
         get
         {
             using var stream = Assembly.GetManifestResourceStream("SidePulse.Cli.Dependencies.json") ?? throw new IOException("Dependency credits are missing.");
-            return JsonSerializer.Deserialize<DependencyCredit[]>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            return JsonSerializer.Deserialize(stream, CliJson.Info<DependencyCredit[]>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }))!;
         }
     }
     public static IReadOnlyList<string> LicenseResources => Assembly.GetManifestResourceNames().Where(n => n.Contains(".Licenses.", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToArray();
@@ -46,7 +46,7 @@ public static class ProjectInfo
             try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
             catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { throw new IOException("Could not open the browser. Open this URL manually: " + url); }
         }
-        if (settings.Json) Output.Print(new { url, opened = settings.Open }); else Console.WriteLine(url);
+        if (settings.Json) Output.Print(new LinkReply(url, settings.Open)); else Console.WriteLine(url);
         return 0;
     }
 }
@@ -54,7 +54,7 @@ public sealed class AboutCommand : Command<AboutSettings>
 {
     public override int Execute(CommandContext context, AboutSettings settings, CancellationToken cancellationToken)
     {
-        if (settings.Json) Output.Print(new { name = "SidePulse.NET", version = ProjectInfo.Version, license = "MIT", unofficial = true, website = ProjectInfo.Website, github = ProjectInfo.Github, upstream = ProjectInfo.Upstream });
+        if (settings.Json) Output.Print(new AboutReply("SidePulse.NET", ProjectInfo.Version, "MIT", true, ProjectInfo.Website, ProjectInfo.Github, ProjectInfo.Upstream));
         else Console.WriteLine($"SidePulse.NET {ProjectInfo.Version}\nUnofficial .NET companion · MIT\nOriginal SidePulse by Peter Kuhar / InteliWEAR\n{ProjectInfo.Github}");
         return 0;
     }
@@ -85,7 +85,7 @@ public sealed class CreditsCommand : Command<AboutSettings>
 {
     public override int Execute(CommandContext context, AboutSettings settings, CancellationToken cancellationToken)
     {
-        if (settings.Json) Output.Print(new { project = "Gordon Breuer / Anheledir", upstream = "Peter Kuhar / InteliWEAR", dependencies = ProjectInfo.Dependencies });
+        if (settings.Json) Output.Print(new CreditsReply("Gordon Breuer / Anheledir", "Peter Kuhar / InteliWEAR", ProjectInfo.Dependencies));
         else
         {
             Console.WriteLine("SidePulse.NET: Gordon Breuer / Anheledir\nSidePulse hardware, protocol and original animations: Peter Kuhar / InteliWEAR\n" + ProjectInfo.Upstream);
@@ -102,7 +102,7 @@ public sealed class LicensesCommand : Command<AboutSettings>
         var resources = ProjectInfo.LicenseResources;
         var runtimeDirectory = Path.Combine(AppContext.BaseDirectory, "third-party", "dotnet");
         var runtime = Directory.Exists(runtimeDirectory) ? Directory.GetFiles(runtimeDirectory).Order(StringComparer.Ordinal).ToArray() : [];
-        if (settings.Json) Output.Print(new { project = "MIT", dependencies = ProjectInfo.Dependencies, notices = resources.Select(r => new { name = r, text = settings.Full ? ProjectInfo.LicenseText(r) : null }), runtimeNotices = runtime.Select(r => new { name = Path.GetFileName(r), text = settings.Full ? File.ReadAllText(r) : null }) });
+        if (settings.Json) Output.Print(new LicensesReply("MIT", ProjectInfo.Dependencies, resources.Select(r => new LicenseNotice(r, settings.Full ? ProjectInfo.LicenseText(r) : null)).ToArray(), runtime.Select(r => new LicenseNotice(Path.GetFileName(r), settings.Full ? File.ReadAllText(r) : null)).ToArray()));
         else
         {
             Console.WriteLine("SidePulse.NET · MIT");

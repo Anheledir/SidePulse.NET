@@ -20,13 +20,13 @@ public static class HostControl
         try { await pipe.ConnectAsync(waitForConnection ? Timeout.Infinite : 0, deadline.Token); }
         catch (TimeoutException) when (!waitForConnection) { return new(false, null, AgentState.Unknown, []); }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return new(false, null, AgentState.Unknown, []); }
-        await pipe.WriteAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { Command = command, ProtocolVersion = 1 }) + "\n"), deadline.Token);
+        await pipe.WriteAsync(Encoding.UTF8.GetBytes(IpcJson.Request(new HostRequest(command)) + "\n"), deadline.Token);
         await pipe.FlushAsync(deadline.Token);
         using var reader = new StreamReader(pipe, Encoding.UTF8);
         var response = await reader.ReadLineAsync(deadline.Token) ?? throw new IOException("The host closed without a response.");
         await pipe.WriteAsync(new byte[] { 10 }, deadline.Token);
         await pipe.FlushAsync(deadline.Token);
-        var snapshot = JsonSerializer.Deserialize<HostSnapshot>(response, Output.Json) ?? throw new IOException("Invalid host response.");
+        var snapshot = JsonSerializer.Deserialize(response, CliJson.Info<HostSnapshot>(Output.Json)) ?? throw new IOException("Invalid host response.");
         if (snapshot.ProtocolVersion != 1) throw new IOException("Host protocol mismatch. Stop the old host and use matching CLI/host versions.");
         return snapshot;
     }
@@ -60,7 +60,7 @@ public sealed class HostStopCommand : AsyncCommand<HostActionSettings>
                 if (attempt == 24) throw new IOException("The host acknowledged stop but has not exited. No process was forcibly killed.");
             }
         }
-        if (settings.Json) Output.Print(new { stopped = state.Running });
+        if (settings.Json) Output.Print(new StopReply(state.Running));
         else AnsiConsole.WriteLine(state.Running ? "Host stopped." : "Host was not running.");
         return 0;
     }

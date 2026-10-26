@@ -82,7 +82,7 @@ public sealed class HookCommand : AsyncCommand<HookSettings>
             if (length > LocalPipe.MaximumMessageBytes) return 0;
             var item = AgentEvents.Parse(settings.Source, settings.Event, new string(buffer, 0, length));
             if (item is null) return 0;
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(item);
+            var bytes = CoreJson.Bytes(item);
             if (bytes.Length > LocalPipe.MaximumMessageBytes) return 0;
             using var pipe = new NamedPipeClientStream(".", LocalPipe.Name, PipeDirection.Out,
                 PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
@@ -184,7 +184,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                                 queued = AgentState.Unknown;
                                 outputs.Writer.TryWrite(patterns[AgentState.Unknown]);
                             }
-                            var response = JsonSerializer.SerializeToUtf8Bytes(new HostSnapshot(true, Environment.ProcessId, sessions.State, sessions.Snapshot));
+                            var response = IpcJson.Snapshot(new HostSnapshot(true, Environment.ProcessId, sessions.State, sessions.Snapshot));
                             await pipe.WriteAsync(response.Concat(new byte[] { 10 }).ToArray(), deadline.Token);
                             await pipe.FlushAsync(deadline.Token);
                             // Windows disconnect discards unread reply bytes. Wait for a bounded receipt
@@ -194,10 +194,10 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
                         }
                         continue;
                     }
-                    var item = JsonSerializer.Deserialize<SessionEvent>(message.ToArray());
+                    var item = CoreJson.Read<SessionEvent>(message.ToArray());
                     if (item is null || !Enum.IsDefined(item.State) || !sessions.Apply(item)) continue;
                     var state = sessions.State;
-                    if (settings.Json) Output.Print(new { state, sessions = sessions.Snapshot });
+                    if (settings.Json) Output.Print(new HostActivityReply(state, sessions.Snapshot));
                     else if (settings.Plain || Console.IsOutputRedirected) Console.WriteLine($"{DateTimeOffset.Now:HH:mm:ss} {state} ({sessions.Snapshot.Count} sessions)");
                     else
                     {

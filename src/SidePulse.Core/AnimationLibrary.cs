@@ -64,13 +64,13 @@ public sealed class AnimationLibrary(string directory)
         foreach (var pattern in profile.States.Values) Name(pattern);
         Directory.CreateDirectory(DirectoryPath);
         var path = Path.Combine(DirectoryPath, name + ".profile.json");
-        WriteFile(path, JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true }) + "\n", overwrite);
+        WriteFile(path, CoreJson.Serialize(profile, CoreJson.Pretty) + "\n", overwrite);
         return path;
     }
     public AnimationProfile LoadProfile(string name)
     {
         var path = Path.Combine(DirectoryPath, Name(name) + ".profile.json");
-        var profile = JsonSerializer.Deserialize<AnimationProfile>(File.ReadAllText(path)) ?? throw new ArgumentException("Invalid animation profile.");
+        var profile = CoreJson.Read<AnimationProfile>(File.ReadAllText(path)) ?? throw new ArgumentException("Invalid animation profile.");
         if (profile.States is null || profile.Brightness is < 0 or > 100 || profile.States.Any(s => !Enum.IsDefined(s.Key))) throw new ArgumentException("Invalid animation profile.");
         foreach (var pattern in profile.States.Values) Name(pattern);
         return profile;

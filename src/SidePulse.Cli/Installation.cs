@@ -31,17 +31,17 @@ public static class Installation
             return path;
         }
     }
-    public static object Status()
+    public static InstallStatusReply Status()
     {
         var record = UserInstallation.ReadRecord();
         var current = Environment.ProcessPath ?? "";
         var resolved = UserPath.ResolveCommand(Environment.GetEnvironmentVariable("PATH") ?? "");
         var installed = record is null ? null : Path.Combine(record.Directory, ApplicationIdentity.CurrentExecutable);
-        return new { mode = record is null ? "portable" : "installed", executable = current,
-            directory = record?.Directory, installedExecutable = installed, installedExecutableExists = installed is not null && File.Exists(installed),
-            bundled = ProjectInfo.IsBundled(), pathRegistered = record?.PathEntries.Count > 0,
-            resolvedCommand = resolved, pathEffective = installed is not null && resolved is not null && (resolved.Equals(installed, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) || UserPath.IsOurLink(resolved, installed)),
-            record = UserInstallation.RecordPath, profileBackups = record?.PathEntries.Where(entry => entry.Kind == "profile" && entry.Backup is not null).Select(entry => entry.Backup).ToArray() ?? [] };
+        return new InstallStatusReply(record is null ? "portable" : "installed", current,
+            record?.Directory, installed, installed is not null && File.Exists(installed),
+            ProjectInfo.IsBundled(), record?.PathEntries.Count > 0, resolved,
+            installed is not null && resolved is not null && (resolved.Equals(installed, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) || UserPath.IsOurLink(resolved, installed)),
+            UserInstallation.RecordPath, record?.PathEntries.Where(entry => entry.Kind == "profile" && entry.Backup is not null).Select(entry => entry.Backup).ToArray() ?? []);
     }
     public static InstallationManifest SourceManifest()
     {
@@ -68,14 +68,14 @@ public static class Installation
         if (Directory.Exists(directory) && Directory.EnumerateFiles(directory, "*.json").Any())
             throw new IOException("Remove managed agent integrations with agents uninstall (including any --config overrides) before uninstalling the application. Provider settings and unrelated hooks are not removed automatically.");
     }
-    public static void Print(bool json, object value, string text) { if (json) Output.Print(value); else Console.WriteLine(text); }
+    public static void Print<T>(bool json, T value, string text) { if (json) Output.Print(value); else Console.WriteLine(text); }
 }
 
 public sealed class InstallCommand : AsyncCommand<InstallSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, InstallSettings settings, CancellationToken token)
     {
-        if (settings.Status) { var status = Installation.Status(); Installation.Print(settings.Json, status, JsonSerializer.Serialize(status, Output.Json)); return 0; }
+        if (settings.Status) { var status = Installation.Status(); Installation.Print(settings.Json, status, CliJson.Serialize(status, Output.Json)); return 0; }
         var manifest = Installation.SourceManifest();
         var directory = Path.GetFullPath(settings.Directory ?? UserInstallation.DefaultDirectory);
         var plan = UserInstallation.Plan(Path.GetDirectoryName(Environment.ProcessPath!)!, directory, manifest);
@@ -90,8 +90,7 @@ public sealed class InstallCommand : AsyncCommand<InstallSettings>
             if (entries.Count > 0) { UserPath.ValidateRemoval(entries); UserPath.CheckConflict(directory); }
             else pathPlan = UserPath.Plan(directory, settings.Shell);
         }
-        var preview = new { state = settings.DryRun ? "planned" : "installed", plan, path = pathPlan, existingPathEntries = entries,
-            restartTerminal = settings.AddToPath, preservesUserSettings = true };
+        var preview = new InstallPreviewReply(settings.DryRun ? "planned" : "installed", plan, pathPlan, entries, settings.AddToPath, true);
         if (settings.DryRun)
         {
             Installation.Print(settings.Json, preview, $"Install {plan.Version} into {directory}\nExecutable: {plan.Executable}\n" + (pathPlan?.Profile is { } profile ? $"PATH profile: {profile}\n{pathPlan.Block}" : settings.AddToPath ? "Register user PATH/launcher. Reopen terminals afterward." : "No PATH or shell-profile changes."));
@@ -109,7 +108,7 @@ public sealed class InstallCommand : AsyncCommand<InstallSettings>
             catch { UserPath.Remove(entries); throw; }
         }
         else if (settings.AddToPath && entries.Count > 0) UserPath.Repair(entries);
-        Installation.Print(settings.Json, new { state = plan.AlreadyInstalled ? "already-installed" : "installed", executable = plan.Executable, directory, pathRegistered = entries.Count > 0, restartTerminal = settings.AddToPath },
+        Installation.Print(settings.Json, new InstallReply(plan.AlreadyInstalled ? "already-installed" : "installed", plan.Executable, directory, entries.Count > 0, settings.AddToPath),
             $"Installed: {plan.Executable}\n" + (settings.AddToPath ? "User PATH/launcher configured. Reopen terminals; use the absolute executable immediately." : "PATH was not changed.") + "\nPhone links and settings are preserved. Install integrations from this permanent executable path.");
         return 0;
     }
@@ -126,12 +125,12 @@ public sealed class UninstallCommand : AsyncCommand<UninstallSettings>
     public override async Task<int> ExecuteAsync(CommandContext context, UninstallSettings settings, CancellationToken token)
     {
         var record = UserInstallation.ReadRecord();
-        if (record is null) { Installation.Print(settings.Json, new { state = "not-installed" }, "No managed installation is registered."); return 0; }
+        if (record is null) { Installation.Print(settings.Json, new StateReply("not-installed"), "No managed installation is registered."); return 0; }
         UserInstallation.ValidateRemoval(record);
         Installation.RequireNoManagedHooks();
         if (settings.DryRun)
         {
-            Installation.Print(settings.Json, new { state = "planned", directory = record.Directory, removePathEntries = record.PathEntries, preservesUserSettings = true },
+            Installation.Print(settings.Json, new UninstallPreviewReply("planned", record.Directory, record.PathEntries, true),
                 $"Remove owned application files from {record.Directory} and its managed PATH/launcher entries. Settings, phone links, user-added files and profile backups remain.");
             return 0;
         }
@@ -140,7 +139,7 @@ public sealed class UninstallCommand : AsyncCommand<UninstallSettings>
         if (!string.Equals(currentDirectory, record.Directory, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
         {
             UserInstallation.Remove(record);
-            Installation.Print(settings.Json, new { state = "removed" }, "Application and owned PATH entries removed. Settings and phone links retained."); return 0;
+            Installation.Print(settings.Json, new StateReply("removed"), "Application and owned PATH entries removed. Settings and phone links retained."); return 0;
         }
         var job = Path.Combine(Path.GetDirectoryName(UserInstallation.RecordPath)!, "uninstall-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(job);
@@ -156,13 +155,13 @@ public sealed class UninstallCommand : AsyncCommand<UninstallSettings>
         using var parent = Process.GetCurrentProcess();
         var plan = new UninstallPlan(UserInstallation.RecordPath, InstallationManifest.Hash(UserInstallation.RecordPath), record, parent.Id, parent.StartTime.ToUniversalTime().Ticks);
         var planPath = Path.Combine(job, "uninstall.json");
-        UserInstallation.AtomicWrite(planPath, JsonSerializer.SerializeToUtf8Bytes(plan, InstallationManifest.Json));
+        UserInstallation.AtomicWrite(planPath, CliJson.Bytes(plan, InstallationManifest.Json));
         var start = new ProcessStartInfo(Path.Combine(job, ApplicationIdentity.CurrentExecutable)) { UseShellExecute = OperatingSystem.IsWindows(), CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden,
             RedirectStandardInput = !OperatingSystem.IsWindows(), RedirectStandardOutput = !OperatingSystem.IsWindows(), RedirectStandardError = !OperatingSystem.IsWindows(), WorkingDirectory = job };
         foreach (var argument in new[] { "internal-uninstall", "--plan", planPath }) start.ArgumentList.Add(argument);
         using var helper = Process.Start(start) ?? throw new IOException("Could not start uninstall helper. The installation was preserved.");
         if (!OperatingSystem.IsWindows()) helper.StandardInput.Close();
-        Installation.Print(settings.Json, new { state = "scheduled", workspace = job }, "Uninstall scheduled after this process exits. Settings and phone links are retained; the helper workspace remains for recovery.");
+        Installation.Print(settings.Json, new ScheduledUninstallReply("scheduled", job), "Uninstall scheduled after this process exits. Settings and phone links are retained; the helper workspace remains for recovery.");
         return 0;
     }
 }
@@ -175,7 +174,7 @@ public sealed class InternalUninstallCommand : AsyncCommand<InternalUninstallSet
     public override async Task<int> ExecuteAsync(CommandContext context, InternalUninstallSettings settings, CancellationToken token)
     {
         if (!OperatingSystem.IsWindows()) HostLogs.Detach();
-        var plan = JsonSerializer.Deserialize<UninstallPlan>(await File.ReadAllTextAsync(settings.Plan, token), InstallationManifest.Json) ?? throw new IOException("Invalid uninstall plan.");
+        var plan = JsonSerializer.Deserialize(await File.ReadAllTextAsync(settings.Plan, token), CliJson.Info<UninstallPlan>(InstallationManifest.Json)) ?? throw new IOException("Invalid uninstall plan.");
         var job = Path.GetDirectoryName(Environment.ProcessPath!)!;
         if (Path.GetFullPath(settings.Plan) != Path.Combine(job, "uninstall.json") || Path.GetDirectoryName(job) != Path.GetDirectoryName(UserInstallation.RecordPath) || !Path.GetFileName(job).StartsWith("uninstall-", StringComparison.Ordinal)
             || plan.RecordPath != UserInstallation.RecordPath || job == plan.Record.Directory) throw new IOException("Uninstall helpers must run from their private prepared workspace.");
@@ -190,12 +189,12 @@ public sealed class InternalUninstallCommand : AsyncCommand<InternalUninstallSet
         try
         {
             UserInstallation.Remove(UserInstallation.ReadRecord() ?? throw new IOException("Installation record is missing."));
-            UserInstallation.AtomicWrite(Path.Combine(job, "result.json"), JsonSerializer.SerializeToUtf8Bytes(new { state = "removed" }));
+            UserInstallation.AtomicWrite(Path.Combine(job, "result.json"), CliJson.Bytes(new StateReply("removed")));
             return 0;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            UserInstallation.AtomicWrite(Path.Combine(job, "result.json"), JsonSerializer.SerializeToUtf8Bytes(new { state = "failed", error = ex.Message, recoveryPackage = job }));
+            UserInstallation.AtomicWrite(Path.Combine(job, "result.json"), CliJson.Bytes(new FailedUninstallReply("failed", ex.Message, job)));
             return 1;
         }
     }

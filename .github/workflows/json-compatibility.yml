@@ -1,0 +1,52 @@
+name: JSON compatibility
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'scripts/json_compatibility.py'
+      - '.github/workflows/json-compatibility.yml'
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: Baseline commit or tag to publish with the same SDK
+        required: true
+        default: 763ab97ae34175f3ef69331f42bb3740581b0d4f
+permissions:
+  contents: read
+concurrency:
+  group: json-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: candidate
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: baseline
+          ref: ${{ inputs.baseline_ref || github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Compare public JSON contracts with the baseline
+        shell: pwsh
+        run: |
+          $prefix = if ($IsWindows) { 'win' } elseif ($IsMacOS) { 'osx' } else { 'linux' }
+          $rid = "$prefix-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())"
+          $binary = if ($IsWindows) { 'spn.exe' } else { 'spn' }
+          dotnet --info > sdk-info.txt
+          foreach ($source in @('baseline', 'candidate')) {
+            dotnet publish "$source/src/SidePulse.Cli" -c Release -r $rid --self-contained true -p:NuGetLockFilePath=obj/packages.publish.lock.json -o "$source/published"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          python candidate/scripts/json_compatibility.py "baseline/published/$binary" "candidate/published/$binary"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -41,7 +41,7 @@ public sealed class PreferenceStore(string path)
         try
         {
             if (new FileInfo(path).Length > 16384) throw new ArgumentException("Settings file is too large.");
-            var preferences = JsonSerializer.Deserialize<Preferences>(File.ReadAllBytes(path)) ?? throw new ArgumentException("Empty settings.");
+            var preferences = CoreJson.Read<Preferences>(File.ReadAllBytes(path)) ?? throw new ArgumentException("Empty settings.");
             preferences.Validate();
             return preferences;
         }
@@ -56,6 +56,6 @@ public sealed class PreferenceStore(string path)
         var directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
         if (OperatingSystem.IsWindows()) Directory.CreateDirectory(directory);
         else Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        UserInstallation.AtomicWrite(path, JsonSerializer.SerializeToUtf8Bytes(preferences, new JsonSerializerOptions { WriteIndented = true }));
+        UserInstallation.AtomicWrite(path, CoreJson.Bytes(preferences, CoreJson.Pretty));
     }
 }

@@ -42,7 +42,7 @@ public sealed class PreferencesCommand : Command<PreferenceSettings>
             if (value.Profile is not null) _ = AnimationLibrary.ResolveProfile(value.Profile, value.Model, value.Device);
         }
         if (settings.Action != "show" && !settings.DryRun) store.Save(value);
-        if (settings.Json) Output.Print(new { path = PreferenceStore.DefaultPath, dryRun = settings.DryRun, preferences = value });
+        if (settings.Json) Output.Print(new SettingsReply(PreferenceStore.DefaultPath, settings.DryRun, value));
         else Console.WriteLine($"{value.OutputDescription}\nBrightness: {value.Brightness}% · Profile: {value.Profile ?? "built-in"} · Model: {value.Model?.ToString() ?? "auto"}\nExport shell: {value.Shell ?? (OperatingSystem.IsWindows() ? "powershell" : "bash")}\nSettings: {PreferenceStore.DefaultPath}" + (settings.DryRun ? "\nPreview only; settings unchanged." : ""));
         return 0;
     }

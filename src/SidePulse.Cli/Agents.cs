@@ -59,7 +59,7 @@ public sealed class AgentInstallCommand : Command<AgentSettings>
     {
         var generated = HookConfiguration.Generate(settings.Agent, HookConfiguration.Executable(settings.Executable), OperatingSystem.IsWindows());
         var status = settings.Installation.Install(settings.Target, settings.Agent, generated, settings.DryRun);
-        if (settings.Json) Output.Print(new { status, managedHooks = settings.DryRun ? generated : null });
+        if (settings.Json) Output.Print(new AgentInstallReply(status, settings.DryRun ? generated : null));
         else
         {
             AnsiConsole.WriteLine($"{status.State}: {status.Target}");

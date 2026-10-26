@@ -45,7 +45,7 @@ public sealed class PatternValidateCommand : Command<PatternSettings>
         var program = settings.File is null && settings.Name is { } name && System.IO.File.Exists(name)
             ? AnimationLibrary.WithBrightness(new(System.IO.File.ReadAllText(name)), settings.Brightness) : settings.Read();
         var animation = Animation.Parse(program, settings.Model);
-        if (settings.Json) Output.Print(new { valid = true, model = settings.Model, bytes = program.ByteCount, lines = program.LineCount, instructions = animation.Instructions.Count });
+        if (settings.Json) Output.Print(new ValidationReply(true, settings.Model, program.ByteCount, program.LineCount, animation.Instructions.Count));
         else Console.WriteLine($"Valid ({program.ByteCount} bytes, {program.LineCount} lines, {settings.Model}).");
         return 0;
     }
@@ -122,7 +122,7 @@ public sealed class PatternPreviewCommand : AsyncCommand<PreviewSettings>
         if (settings.Json)
         {
             var models = settings.Both ? Enum.GetValues<DeviceModel>() : [settings.Model];
-            Output.Print(models.Select(m => { var selected = settings.File is null ? AnimationLibrary.WithBrightness(AnimationLibrary.Default.Get(settings.Name!, m), settings.Brightness) : program; var player = new AnimationPlayer(Animation.Parse(selected, m)); player.Advance(settings.At); return new { model = m, at = settings.At, colors = player.Frame.Select(c => c.ToString()).ToArray() }; }).ToArray());
+            Output.Print(models.Select(m => { var selected = settings.File is null ? AnimationLibrary.WithBrightness(AnimationLibrary.Default.Get(settings.Name!, m), settings.Brightness) : program; var player = new AnimationPlayer(Animation.Parse(selected, m)); player.Advance(settings.At); return new FrameReply(m, settings.At, player.Frame.Select(c => c.ToString()).ToArray()); }).ToArray());
         }
         else
         {
@@ -177,7 +177,7 @@ public sealed class PatternImportCommand : Command<PatternImportSettings>
     public override int Execute(CommandContext context, PatternImportSettings settings, CancellationToken cancellationToken)
     {
         var path = AnimationLibrary.Default.Save(settings.Name, settings.Model, new(System.IO.File.ReadAllText(settings.File)), settings.Force);
-        if (settings.Json) Output.Print(new { saved = path }); else Console.WriteLine(path);
+        if (settings.Json) Output.Print(new SavedReply(path)); else Console.WriteLine(path);
         return 0;
     }
 }
@@ -192,7 +192,7 @@ public sealed class PatternExportCommand : Command<PatternExportSettings>
     {
         var program = settings.Read(); Animation.Parse(program, settings.Model);
         if (settings.Destination is { } path) AnimationLibrary.WriteFile(path, program.Text + "\n", settings.Force);
-        if (settings.Json) Output.Print(new { program = program.Text, output = settings.Destination });
+        if (settings.Json) Output.Print(new ExportReply(program.Text, settings.Destination));
         else if (settings.Destination is null) Console.WriteLine(program.Text);
         else Console.WriteLine(Path.GetFullPath(settings.Destination));
         return 0;
@@ -219,7 +219,7 @@ public sealed class ProfileSetCommand : Command<ProfileSettings>
         profile.States[settings.State.Value] = settings.Pattern;
         profile = profile with { Brightness = settings.Brightness ?? profile.Brightness };
         var path = AnimationLibrary.Default.SaveProfile(settings.Name, profile, true);
-        if (settings.Json) Output.Print(new { path, profile }); else Console.WriteLine(path);
+        if (settings.Json) Output.Print(new ProfileReply(path, profile)); else Console.WriteLine(path);
         return 0;
     }
 }

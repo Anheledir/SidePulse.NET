@@ -18,9 +18,9 @@ from benchmark_startup import benchmark
 MODES = {
     'full': [],
     'raw-trim': ['PublishTrimmed=true'],
-    'partial-strict': ['PublishTrimmed=true', 'TrimMode=partial', 'JsonSerializerIsReflectionEnabledByDefault=true'],
-    'partial': ['PublishTrimmed=true', 'TrimMode=partial', 'JsonSerializerIsReflectionEnabledByDefault=true'],
-    'partial-r2r': ['PublishTrimmed=true', 'TrimMode=partial', 'JsonSerializerIsReflectionEnabledByDefault=true', 'PublishReadyToRun=true'],
+    'partial-strict': ['PublishTrimmed=true', 'TrimMode=partial'],
+    'partial': ['PublishTrimmed=true', 'TrimMode=partial'],
+    'partial-r2r': ['PublishTrimmed=true', 'TrimMode=partial', 'PublishReadyToRun=true'],
     'aot': ['PublishAot=true', 'PublishSingleFile=false', 'DebugType=None', 'StripSymbols=true'],
 }
 

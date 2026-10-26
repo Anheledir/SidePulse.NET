@@ -39,7 +39,7 @@ public static class TerminalMode
     }
     public static int Error(Exception exception)
     {
-        if (Json) Console.Error.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { error = exception.Message }));
+        if (Json) Console.Error.WriteLine(CliJson.Serialize(new ErrorReply(exception.Message)));
         else Console.Error.WriteLine("Error: " + exception.Message);
         return 1;
     }

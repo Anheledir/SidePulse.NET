@@ -107,6 +107,8 @@ public sealed class CoreTests
         Assert.Equal(1, body.RootElement.GetProperty("aps").GetProperty("content-available").GetInt32());
         Assert.Equal("off", body.RootElement.GetProperty("leds").GetString());
         Assert.False(body.RootElement.GetProperty("aps").TryGetProperty("alert", out _));
+        Assert.Equal(3, body.RootElement.EnumerateObject().Count());
+        Assert.True(Guid.TryParse(body.RootElement.GetProperty("data").GetProperty("sidepulse_event_id").GetString(), out _));
         handler.Throw = true;
         var error = await Assert.ThrowsAsync<IOException>(() => new PhoneBridge(client).SendAsync(new string('a', 64), new LedProgram("off")));
         Assert.DoesNotContain(new string('a', 64), error.Message);
