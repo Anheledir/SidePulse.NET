@@ -42,7 +42,7 @@ public static class HookConfiguration
             }
             else if (provider == AgentProvider.Kiro)
             {
-                kiro.Add(new JsonObject { ["name"] = "SidePulse.NET " + name, ["trigger"] = name, ["timeout"] = 2,
+                kiro.Add((JsonNode)new JsonObject { ["name"] = "SidePulse.NET " + name, ["trigger"] = name, ["timeout"] = 2,
                     ["action"] = new JsonObject { ["type"] = "command", ["command"] = portable } });
             }
             else

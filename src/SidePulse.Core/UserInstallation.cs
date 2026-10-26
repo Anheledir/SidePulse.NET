@@ -18,7 +18,7 @@ public static class UserInstallation
         path ??= RecordPath;
         if (!File.Exists(path)) return null;
         if (new FileInfo(path).Length > 65536) throw new IOException("Installation record is too large. Existing files were preserved.");
-        var record = JsonSerializer.Deserialize<UserInstallRecord>(File.ReadAllText(path), InstallationManifest.Json);
+        var record = CoreJson.Read<UserInstallRecord>(File.ReadAllText(path), InstallationManifest.Json);
         if (record is null || record.Format != 1 || !Path.IsPathFullyQualified(record.Directory) || record.PathEntries is null || record.PathEntries.Count > 3)
             throw new IOException("Installation record is invalid. Existing files were preserved.");
         _ = Target(record.Directory);
@@ -30,7 +30,7 @@ public static class UserInstallation
         path ??= RecordPath;
         if (OperatingSystem.IsWindows()) Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         else Directory.CreateDirectory(Path.GetDirectoryName(path)!, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        AtomicWrite(path, System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(record, InstallationManifest.Json));
+        AtomicWrite(path, CoreJson.Bytes(record, InstallationManifest.Json));
     }
     public static void AtomicWrite(string path, byte[] bytes)
     {
@@ -98,7 +98,7 @@ public static class UserInstallation
                 File.Copy(InstallationManifest.Resolve(plan.Source, file.Path), target);
                 if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(target, (UnixFileMode)file.Mode);
             }
-            AtomicWrite(Path.Combine(stage, InstallationManifest.Filename), JsonSerializer.SerializeToUtf8Bytes(manifest, InstallationManifest.Json));
+            AtomicWrite(Path.Combine(stage, InstallationManifest.Filename), CoreJson.Bytes(manifest, InstallationManifest.Json));
             _ = InstallationManifest.Read(stage);
             manifest.Verify(stage, true);
             if (Directory.Exists(plan.Destination))

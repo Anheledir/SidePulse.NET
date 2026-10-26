@@ -19,12 +19,12 @@ public static class UpdateTransaction
     {
         var path = ReceiptPath(target);
         if (!File.Exists(path)) return null;
-        return JsonSerializer.Deserialize<UpdateReceipt>(File.ReadAllText(path), InstallationManifest.Json) ?? throw new IOException("Invalid update receipt.");
+        return CoreJson.Read<UpdateReceipt>(File.ReadAllText(path), InstallationManifest.Json) ?? throw new IOException("Invalid update receipt.");
     }
     public static void Receipt(UpdatePlan plan, string state, string? error = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(plan.Receipt)!);
-        AnimationLibrary.WriteFile(plan.Receipt, JsonSerializer.Serialize(new UpdateReceipt(state, plan.Version, plan.Target, plan.Backup, plan.Job, error), InstallationManifest.Json) + "\n", true);
+        AnimationLibrary.WriteFile(plan.Receipt, CoreJson.Serialize(new UpdateReceipt(state, plan.Version, plan.Target, plan.Backup, plan.Job, error), InstallationManifest.Json) + "\n", true);
     }
     public static FileStream Lock(string target)
     {
@@ -68,7 +68,7 @@ public static class UpdateTransaction
         }
         File.Copy(Path.Combine(target, InstallationManifest.Filename), Path.Combine(helper, InstallationManifest.Filename));
         current.Verify(helper, true);
-        AnimationLibrary.WriteFile(Path.Combine(job, "plan.json"), JsonSerializer.Serialize(plan, InstallationManifest.Json) + "\n", false);
+        AnimationLibrary.WriteFile(Path.Combine(job, "plan.json"), CoreJson.Serialize(plan, InstallationManifest.Json) + "\n", false);
         Receipt(plan, "prepared");
         return plan;
     }

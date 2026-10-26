@@ -8,7 +8,7 @@ public static class OpenCodePlugin
         // Managed by SidePulse.NET. Uninstall before editing or moving the executable.
         import { spawn } from "node:child_process";
         const executable =
-        """ + JsonSerializer.Serialize(executable) + ";\n" + """
+        """ + CoreJson.Serialize(executable) + ";\n" + """
         export const SidePulsePlugin = async () => {
           const pending = new Map();
           const failed = new Set();

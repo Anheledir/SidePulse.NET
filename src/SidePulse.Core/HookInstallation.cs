@@ -7,16 +7,15 @@ namespace SidePulse.Core;
 public sealed record InstallationStatus(string State, string Target, string? Backup);
 public sealed class HookInstallation(string manifestDirectory)
 {
-    private sealed record Manifest(string Target, string BeforeHash, string InstalledHash, string? Backup);
     private static string Hash(byte[]? bytes) => bytes is null ? "absent" : Convert.ToHexString(SHA256.HashData(bytes));
     private string ManifestPath(string target) => Path.Combine(manifestDirectory, Hash(System.Text.Encoding.UTF8.GetBytes(target)) + ".json");
     private static byte[]? Read(string target) => File.Exists(target) ? File.ReadAllBytes(target) : null;
     private static string Target(string path) => Path.GetFullPath(path);
-    private Manifest? Load(string target)
+    private HookOwnershipManifest? Load(string target)
     {
         var path = ManifestPath(target);
         if (!File.Exists(path)) return null;
-        var record = JsonSerializer.Deserialize<Manifest>(File.ReadAllBytes(path)) ?? throw new IOException("Installation manifest is unreadable.");
+        var record = CoreJson.Read<HookOwnershipManifest>(File.ReadAllBytes(path)) ?? throw new IOException("Installation manifest is unreadable.");
         if (record.Target != target || record.Backup is not null && !record.Backup.StartsWith(target + ".sidepulse-net-", StringComparison.Ordinal))
             throw new IOException("Installation manifest paths do not match this target.");
         return record;
@@ -65,9 +64,9 @@ public sealed class HookInstallation(string manifestDirectory)
         if (Hash(Read(target)) != Hash(before) || Load(target) is not null) throw new IOException("Configuration changed while preparing installation. Retry after reviewing it.");
         var backup = before is null ? null : target + ".sidepulse-net-" + DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss") + "-" + Guid.NewGuid().ToString("N") + ".bak";
         if (backup is not null) { using var file = PrivateFile(backup, FileMode.CreateNew); file.Write(before!); file.Flush(true); }
-        var record = new Manifest(target, Hash(before), Hash(after), backup);
+        var record = new HookOwnershipManifest(target, Hash(before), Hash(after), backup);
         // A manifest written before the target makes an interrupted installation detectable and recoverable.
-        AtomicWrite(ManifestPath(target), JsonSerializer.SerializeToUtf8Bytes(record));
+        AtomicWrite(ManifestPath(target), CoreJson.Bytes(record));
         try
         {
             if (Hash(Read(target)) != Hash(before)) throw new IOException("Configuration changed during installation. No provider configuration was replaced.");

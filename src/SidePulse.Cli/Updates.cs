@@ -22,7 +22,7 @@ public static class Updater
             return root.TrimEnd(Path.DirectorySeparatorChar);
         }
     }
-    public static void Print(UpdateSettings settings, object data, string text) { if (settings.Json) Output.Print(data); else Console.WriteLine(text); }
+    public static void Print<T>(UpdateSettings settings, T data, string text) { if (settings.Json) Output.Print(data); else Console.WriteLine(text); }
     public static async Task<(AvailableRelease? Release, UpdateCheck Check)> Check(UpdateSettings settings, CancellationToken cancellationToken)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -69,7 +69,7 @@ public sealed class UpdateInstallCommand : AsyncCommand<UpdateSettings>
         if (release is null || new ReleaseVersion(release.Version).CompareTo(new(ProjectInfo.Version)) <= 0)
         { Updater.Print(settings, check, release is null ? "No published release in the selected channel." : "Already up to date."); return 0; }
         if (!check.Available) throw new IOException("The release is missing a package or SHA256SUMS; update refused.");
-        if (settings.DryRun) { Updater.Print(settings, new { state = "planned", check }, $"Would download, verify and install {check.Asset} ({check.Latest}) into {Updater.Target}."); return 0; }
+        if (settings.DryRun) { Updater.Print(settings, new UpdatePreviewReply("planned", check), $"Would download, verify and install {check.Asset} ({check.Latest}) into {Updater.Target}."); return 0; }
         var installed = InstallationManifest.Read(Updater.Target);
         if (installed.Version != ProjectInfo.Version || installed.Runtime != check.Runtime || Path.GetFileName(Environment.ProcessPath) != (ApplicationIdentity.CurrentExecutable)) throw new IOException("Self-update requires an unmodified self-contained release installation.");
         using var gate = UpdateTransaction.Lock(Updater.Target);
@@ -98,7 +98,7 @@ public sealed class UpdateInstallCommand : AsyncCommand<UpdateSettings>
             UpdateTransaction.Receipt(plan, "scheduled");
             using var process = Process.Start(start) ?? throw new IOException("Could not launch the update helper.");
             if (!OperatingSystem.IsWindows()) process.StandardInput.Close();
-            Updater.Print(settings, new { state = "scheduled", version = plan.Version, receipt = plan.Receipt, backup = plan.Backup }, "Verified update scheduled. It will apply after this command exits. Run 'spn update status' to confirm before restarting the host.");
+            Updater.Print(settings, new UpdateScheduledReply("scheduled", plan.Version, plan.Receipt, plan.Backup), "Verified update scheduled. It will apply after this command exits. Run 'spn update status' to confirm before restarting the host.");
             return 0;
         }
         catch
@@ -114,7 +114,7 @@ public sealed class UpdateStatusCommand : Command<UpdateSettings>
     public override int Execute(CommandContext context, UpdateSettings settings, CancellationToken cancellationToken)
     {
         var status = UpdateTransaction.Status(Updater.Target);
-        Updater.Print(settings, new { state = status?.State ?? "none", version = status?.Version, target = Updater.Target, backup = status?.Backup, workspace = status?.Job, error = status?.Error, receipt = UpdateTransaction.ReceiptPath(Updater.Target) }, status is null ? "No recorded update for this installation." : $"{status.State}: {status.Version}\nBackup: {status.Backup}\nWorkspace: {status.Job}" + (status.Error is null ? "" : "\n" + status.Error));
+        Updater.Print(settings, new UpdateStatusReply(status?.State ?? "none", status?.Version, Updater.Target, status?.Backup, status?.Job, status?.Error, UpdateTransaction.ReceiptPath(Updater.Target)), status is null ? "No recorded update for this installation." : $"{status.State}: {status.Version}\nBackup: {status.Backup}\nWorkspace: {status.Job}" + (status.Error is null ? "" : "\n" + status.Error));
         return status?.State is "failed" or "recovery-required" ? 1 : 0;
     }
 }
@@ -130,7 +130,7 @@ public sealed class ApplyUpdateCommand : AsyncCommand<ApplyUpdateSettings>
         try
         {
             if (!OperatingSystem.IsWindows()) HostLogs.Detach();
-            plan = JsonSerializer.Deserialize<UpdatePlan>(await File.ReadAllTextAsync(settings.Plan, cancellationToken), InstallationManifest.Json) ?? throw new IOException("Missing update plan.");
+            plan = CoreJson.Read<UpdatePlan>(await File.ReadAllTextAsync(settings.Plan, cancellationToken), InstallationManifest.Json) ?? throw new IOException("Missing update plan.");
             UpdateTransaction.Validate(plan);
             var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             if (!Path.GetFullPath(settings.Plan).Equals(Path.Combine(plan.Job, "plan.json"), comparison) || !Updater.Target.Equals(Path.Combine(plan.Job, "helper"), comparison)) throw new IOException("Update helpers must run from their prepared workspace.");

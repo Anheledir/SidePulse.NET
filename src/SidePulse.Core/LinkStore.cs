@@ -43,7 +43,6 @@ public sealed class LinkStore(string path, ISecretProtector protector)
         }
     }
     private const int MaximumBytes = 262144;
-    private sealed record Document(int Version, string? DefaultAlias, List<PhoneLink> Links);
     private readonly string fullPath = Path.GetFullPath(path);
 
     private FileStream Lock()
@@ -59,7 +58,7 @@ public sealed class LinkStore(string path, ISecretProtector protector)
         if (!OperatingSystem.IsWindows()) settings.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         return new FileStream(path, settings);
     }
-    private Document Read()
+    private LinkStoreDocument Read()
     {
         if (!File.Exists(fullPath)) return new(1, null, []);
         byte[]? plaintext = null;
@@ -68,7 +67,7 @@ public sealed class LinkStore(string path, ISecretProtector protector)
             if (new FileInfo(fullPath).Length > MaximumBytes) throw new InvalidDataException();
             plaintext = protector.Unprotect(File.ReadAllBytes(fullPath));
             if (plaintext.Length > MaximumBytes) throw new InvalidDataException();
-            var document = JsonSerializer.Deserialize<Document>(plaintext);
+            var document = CoreJson.Read<LinkStoreDocument>(plaintext);
             if (document is null || document.Version != 1 || document.Links is null || document.Links.Count > 128)
                 throw new InvalidDataException();
             var aliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -87,9 +86,9 @@ public sealed class LinkStore(string path, ISecretProtector protector)
         }
         finally { if (plaintext is not null) CryptographicOperations.ZeroMemory(plaintext); }
     }
-    private void Save(Document document)
+    private void Save(LinkStoreDocument document)
     {
-        var plaintext = JsonSerializer.SerializeToUtf8Bytes(document);
+        var plaintext = CoreJson.Bytes(document);
         byte[] encrypted;
         try
         {
@@ -151,7 +150,7 @@ public sealed class LinkStore(string path, ISecretProtector protector)
         document.Links.Remove(link);
         return document with { DefaultAlias = document.DefaultAlias == link.Alias ? null : document.DefaultAlias };
     });
-    private void Change(string alias, Func<Document, PhoneLink, Document> update)
+    private void Change(string alias, Func<LinkStoreDocument, PhoneLink, LinkStoreDocument> update)
     {
         alias = PhoneTokens.Alias(alias);
         using var gate = Lock();

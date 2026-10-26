@@ -9,8 +9,8 @@ namespace SidePulse.Cli;
 
 public static class Output
 {
-    public static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
-    public static void Print(object value) => Console.WriteLine(JsonSerializer.Serialize(value, Json));
+    public static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter<AgentState>(), new JsonStringEnumConverter<AgentProvider>(), new JsonStringEnumConverter<DeviceModel>() } };
+    public static void Print<T>(T value) => Console.WriteLine(CliJson.Serialize(value, Json));
     public static string Color(AgentState state) => state switch
     {
         AgentState.Working => "cyan", AgentState.Waiting => "orange1", AgentState.Done => "green",
@@ -87,7 +87,7 @@ public static class Delivery
     }
     public static void Receipt(TargetSettings settings, LedProgram program)
     {
-        if (settings.Json) Output.Print(new { dryRun = settings.DryRun, bytes = program.ByteCount, lines = program.LineCount, program = program.Text });
+        if (settings.Json) Output.Print(new DeliveryReply(settings.DryRun, program.ByteCount, program.LineCount, program.Text));
         else if (settings.DryRun) AnsiConsole.Write(new Panel(new Text(program.Text)).Header("LED preview").Border(BoxBorder.Rounded));
         else AnsiConsole.MarkupLine("[green]Sent.[/]");
     }
@@ -153,7 +153,7 @@ public sealed class DashboardCommand : Command<DevicesSettings>
 {
     public override int Execute(CommandContext context, DevicesSettings settings, CancellationToken cancellationToken)
     {
-        if (settings.Json) { Output.Print(new { devices = DeviceTransport.Discover(), profiles = Enum.GetNames<AgentState>() }); return 0; }
+        if (settings.Json) { Output.Print(new DashboardReply(DeviceTransport.Discover(), Enum.GetNames<AgentState>())); return 0; }
         AnsiConsole.Write(new Rule("[cyan]SidePulse[/][white].NET[/]").LeftJustified());
         AnsiConsole.MarkupLine("[grey]Small signals. Clear status.[/]\n");
         new DevicesCommand().Execute(context, settings, cancellationToken);

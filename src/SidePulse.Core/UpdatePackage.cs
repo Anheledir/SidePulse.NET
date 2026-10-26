@@ -22,7 +22,7 @@ public sealed record InstallationManifest(int Format, string Version, string Run
     {
         var path = System.IO.Path.Combine(directory, Filename);
         if (!File.Exists(path) || new FileInfo(path).Length > 4 * 1024 * 1024) throw new IOException("This installation has no supported update manifest. Install a current self-contained preview/release manually first.");
-        var manifest = JsonSerializer.Deserialize<InstallationManifest>(File.ReadAllText(path), Json) ?? throw new IOException("Invalid installation manifest.");
+        var manifest = CoreJson.Read<InstallationManifest>(File.ReadAllText(path), Json) ?? throw new IOException("Invalid installation manifest.");
         _ = new ReleaseVersion(manifest.Version);
         if (manifest.Format is not (1 or 2) || manifest.Runtime is not ("win-x64" or "win-arm64" or "osx-x64" or "osx-arm64" or "linux-x64" or "linux-arm64") || manifest.Files is null || manifest.Files.Count is < 1 or > 10000) throw new IOException("Invalid installation manifest.");
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
