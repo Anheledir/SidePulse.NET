@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "label": "optimized",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "architecture": "x86_64",
+  "processor": "",
+  "logical_cpus": 3,
+  "python": "3.12.14",
+  "executable_sha256": "7d5149d9ca403cbb6ac4b4d9a429e93b1d63f6987065f03a76e17f4dd89cef47",
+  "executable_bytes": 76610987,
+  "executable_gzip_bytes": 33159461,
+  "extracted_bytes": 0,
+  "extracted_files": [],
+  "samples_per_mode": 9,
+  "results": {
+    "version": {
+      "empty_bundle_cache": {
+        "samples_ms": [
+          28.35,
+          30.68,
+          34.65,
+          29.19,
+          29.57,
+          26.99,
+          29.76,
+          29.22,
+          29.0
+        ],
+        "median_ms": 29.22,
+        "min_ms": 26.99,
+        "max_ms": 34.65
+      },
+      "cached_bundle": {
+        "samples_ms": [
+          30.6,
+          27.57,
+          32.06,
+          28.26,
+          31.12,
+          28.75,
+          29.75,
+          29.15,
+          27.92
+        ],
+        "median_ms": 29.15,
+        "min_ms": 27.57,
+        "max_ms": 32.06
+      }
+    },
+    "state_preview": {
+      "empty_bundle_cache": {
+        "samples_ms": [
+          171.36,
+          176.45,
+          176.24,
+          188.97,
+          182.97,
+          175.11,
+          183.06,
+          176.61,
+          184.67
+        ],
+        "median_ms": 176.61,
+        "min_ms": 171.36,
+        "max_ms": 188.97
+      },
+      "cached_bundle": {
+        "samples_ms": [
+          169.04,
+          158.64,
+          159.28,
+          174.94,
+          187.98,
+          166.24,
+          187.52,
+          172.75,
+          163.25
+        ],
+        "median_ms": 169.04,
+        "min_ms": 158.64,
+        "max_ms": 187.98
+      }
+    },
+    "home": {
+      "empty_bundle_cache": {
+        "samples_ms": [
+          177.85,
+          197.93,
+          196.68,
+          189.95,
+          230.9,
+          193.38,
+          185.61,
+          180.83,
+          199.79
+        ],
+        "median_ms": 193.38,
+        "min_ms": 177.85,
+        "max_ms": 230.9
+      },
+      "cached_bundle": {
+        "samples_ms": [
+          186.88,
+          189.26,
+          187.07,
+          181.59,
+          389.52,
+          215.76,
+          187.99,
+          199.62,
+          178.68
+        ],
+        "median_ms": 187.99,
+        "min_ms": 178.68,
+        "max_ms": 389.52
+      }
+    }
+  },
+  "home_measurement": "Unix PTY at 100x30, first complete Home input guide",
+  "limits": "Empty bundle cache is not cold OS page cache. Alternating cold/warm runs; no hardware or bridge delivery. Times include process startup, not just managed Main. gzip bytes are executable-only, not the complete release archive.",
+  "comparison": {
+    "version/empty_bundle_cache": {
+      "before_ms": 136.71,
+      "after_ms": 29.22,
+      "change_percent": -78.6
+    },
+    "version/cached_bundle": {
+      "before_ms": 133.7,
+      "after_ms": 29.15,
+      "change_percent": -78.2
+    },
+    "state_preview/empty_bundle_cache": {
+      "before_ms": 170.78,
+      "after_ms": 176.61,
+      "change_percent": 3.4
+    },
+    "state_preview/cached_bundle": {
+      "before_ms": 172.55,
+      "after_ms": 169.04,
+      "change_percent": -2.0
+    },
+    "home/empty_bundle_cache": {
+      "before_ms": 455.27,
+      "after_ms": 193.38,
+      "change_percent": -57.5
+    },
+    "home/cached_bundle": {
+      "before_ms": 464.61,
+      "after_ms": 187.99,
+      "change_percent": -59.5
+    }
+  },
+  "regression_budget": "median <= baseline * 1.5 + 100ms; executable <= baseline * 1.1",
+  "regressions": []
+}

@@ -35,6 +35,8 @@ public static class Updater
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); deadline.CancelAfter(TimeSpan.FromSeconds(15));
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true, CreateNoWindow = true, WorkingDirectory = target };
         start.ArgumentList.Add("--version");
+        // Exercise terminal/parser/command registration, not only the fast version bootstrap.
+        start.ArgumentList.Add("--no-interactive");
         using var process = Process.Start(start) ?? throw new IOException("Could not verify the new executable.");
         process.StandardInput.Close();
         var output = process.StandardOutput.ReadToEndAsync(deadline.Token); var errors = process.StandardError.ReadToEndAsync(deadline.Token);
