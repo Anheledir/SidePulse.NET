@@ -1,0 +1,82 @@
+name: Deployment experiments
+on:
+  pull_request:
+    paths:
+      - 'scripts/deployment_experiments.py'
+      - '.github/workflows/deployment-experiments.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deployment-experiments-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  investigate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      SIDEPULSE_NATIVE_VAULT_TESTS: '1'
+      SIDEPULSE_INSTALL_SYSTEM_TESTS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Prepare isolated native credential vault
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = 'Linux' ]; then
+            sudo apt-get update -qq -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+            sudo apt-get install -y --no-install-recommends libsecret-tools gnome-keyring dbus-x11
+            bus_address=$(dbus-daemon --session --fork --print-address=1)
+            export DBUS_SESSION_BUS_ADDRESS="$bus_address"
+            echo "DBUS_SESSION_BUS_ADDRESS=$bus_address" >> "$GITHUB_ENV"
+            printf '%s' 'sidepulse-ci-only' | gnome-keyring-daemon --unlock --components=secrets
+          else
+            security default-keychain -d user > "$RUNNER_TEMP/sidepulse-previous-keychain"
+            security list-keychains -d user > "$RUNNER_TEMP/sidepulse-previous-search-list"
+            security create-keychain -p 'sidepulse-ci-only' "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security default-keychain -d user -s "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security list-keychains -d user -s "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security unlock-keychain -p 'sidepulse-ci-only' "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+            security set-keychain-settings -lut 21600 "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+          fi
+      - name: Evaluate native publishing modes without changing releases
+        shell: pwsh
+        run: |
+          $destination = Join-Path $env:RUNNER_TEMP 'spn-deployment-experiments'
+          python scripts/deployment_experiments.py --output $destination --samples 5
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet --info > "$destination/sdk-info.log"
+      - name: Upload diagnostic reports only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deployment-experiments-${{ runner.os }}
+          path: |
+            ${{ runner.temp }}/spn-deployment-experiments/*.json
+            ${{ runner.temp }}/spn-deployment-experiments/*.log
+          retention-days: 30
+      - name: Remove temporary macOS keychain
+        if: always() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/sidepulse-previous-keychain" ]; then
+            previous=$(cat "$RUNNER_TEMP/sidepulse-previous-keychain" | tr -d '"' | xargs)
+            security default-keychain -d user -s "$previous"
+          fi
+          if [ -f "$RUNNER_TEMP/sidepulse-previous-search-list" ]; then
+            keychains=()
+            while IFS= read -r keychain; do keychains+=("$keychain"); done < <(python3 -c 'import shlex,sys; print("\n".join(shlex.split(sys.stdin.read())))' < "$RUNNER_TEMP/sidepulse-previous-search-list")
+            security list-keychains -d user -s "${keychains[@]}"
+          fi
+          if [ -f "$RUNNER_TEMP/sidepulse-ci.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/sidepulse-ci.keychain-db"
+          fi
