@@ -152,8 +152,8 @@ public sealed class ShellSession(Func<string[], CancellationToken, int> execute)
         string host;
         try
         {
-            var snapshot = HostControl.Request("status", CancellationToken.None, TimeSpan.FromMilliseconds(300)).GetAwaiter().GetResult();
-            host = snapshot.Running ? $"running · {snapshot.State} · {snapshot.Sessions.Count} sessions" : "stopped";
+            var snapshot = HostControl.Request("status", CancellationToken.None, TimeSpan.FromMilliseconds(300), waitForConnection: false).GetAwaiter().GetResult();
+            host = snapshot.Running ? $"running · {snapshot.State} · {snapshot.Sessions.Count} sessions" : "not connected";
         }
         catch (Exception ex) when (ex is IOException or OperationCanceledException or UnauthorizedAccessException) { host = "not responding · see Agents & host"; }
         return $"Output: {settings.OutputDescription}\nBrightness: {settings.Brightness}% · Profile: {settings.Profile ?? "built-in"} · Shell: {TerminalMode.Shell}\nHost: {host}\nLast action: {recent ?? "none this session"}";

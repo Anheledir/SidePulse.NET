@@ -72,6 +72,7 @@ def main(executable):
 
         menu = Terminal([])
         try:
+            menu.until('Host: not connected')
             menu.until('Quit')
             menu.send(b'\x1b')  # Esc at Home never exits.
             menu.until('Quit')
@@ -153,6 +154,29 @@ def main(executable):
         finally:
             if restarted.process.poll() is None:
                 restarted.process.kill()
+
+        host = subprocess.Popen([executable, 'host', 'run', '--dry-run', '--plain'],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+        connected = None
+        try:
+            for _ in range(20):
+                status = subprocess.run([executable, 'host', 'status', '--json'], capture_output=True,
+                                        text=True, env=env, timeout=5)
+                if status.returncode == 0 and json.loads(status.stdout)['Running']:
+                    break
+                assert host.poll() is None, 'Dry-run host exited before readiness'
+            else:
+                raise AssertionError('Dry-run host did not become ready')
+            connected = Terminal([])
+            connected.until('Host: running')
+            connected.until('Quit')
+            connected.send(b'\x1b[A\r')
+            connected.finish()
+        finally:
+            if connected is not None and connected.process.poll() is None:
+                connected.process.kill()
+            host.terminate()
+            host.wait(timeout=5)
 
         file = root / 'custom.LED'
         editor = Terminal(['animations', 'edit', '--file', str(file), '--model', 'dot'])

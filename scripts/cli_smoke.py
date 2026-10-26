@@ -18,6 +18,10 @@ def main():
         assert result.returncode == 0, (args, result.stdout, result.stderr)
         return result
 
+    version = run('--version').stdout
+    assert version and version == run('-v').stdout
+    assert run('--version', '--quiet').stdout == ''
+    assert version == run('--version', '--no-interactive').stdout
     preview = json.loads(run('state', 'working', '--dry-run', '--json').stdout)
     assert preview['program'] == 'off\n#00e5ff 1.6s pulse\nrepeat'
     malformed = run('hook', 'preToolUse', input='invalid')

@@ -12,12 +12,13 @@ namespace SidePulse.Cli;
 public sealed record HostSnapshot(bool Running, int? ProcessId, AgentState State, IReadOnlyList<SessionView> Sessions, int ProtocolVersion = 1);
 public static class HostControl
 {
-    public static async Task<HostSnapshot> Request(string command, CancellationToken cancellationToken, TimeSpan? timeout = null)
+    public static async Task<HostSnapshot> Request(string command, CancellationToken cancellationToken, TimeSpan? timeout = null, bool waitForConnection = true)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout ?? TimeSpan.FromSeconds(2));
         using var pipe = new NamedPipeClientStream(".", LocalPipe.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-        try { await pipe.ConnectAsync(deadline.Token); }
+        try { await pipe.ConnectAsync(waitForConnection ? Timeout.Infinite : 0, deadline.Token); }
+        catch (TimeoutException) when (!waitForConnection) { return new(false, null, AgentState.Unknown, []); }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return new(false, null, AgentState.Unknown, []); }
         await pipe.WriteAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { Command = command, ProtocolVersion = 1 }) + "\n"), deadline.Token);
         await pipe.FlushAsync(deadline.Token);

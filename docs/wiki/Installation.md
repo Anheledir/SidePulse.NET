@@ -98,3 +98,18 @@ state; no process is forcibly killed. Settings remain available for reinstall.
 Installation registration and PATH ownership are stored in `installation.json`
 beside application settings, separate from protected phone credentials. `install
 --status` and `doctor` show installation context without exposing credentials.
+
+## Startup and executable size
+
+Self-contained bundles include the .NET runtime. A large executable does not imply
+that the whole application is unpacked on each launch. Native extraction depends
+on runtime/platform; local Linux .NET 10 startup measurements observed no extracted
+files for version, state preview and Home. Empty extraction-cache and warm-cache
+measurements must be distinguished from cold OS startup.
+
+Home probes the host without waiting for an absent endpoint, and bare version
+checks use a lightweight bootstrap. Bundle compression remains disabled: the
+measured smaller executable incurred additional startup CPU cost and did not
+reduce the gzip download. See the repository's
+[startup report](https://github.com/Anheledir/SidePulse.NET/blob/main/docs/performance/2026-10-26-startup.md) for numbers, limits and
+reproduction; Native AOT/trimming remains a separate investigation.
