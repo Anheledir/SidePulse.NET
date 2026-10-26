@@ -5,15 +5,17 @@ In a terminal, `spn` opens a persistent session. Bare groups `animations`,
 Up/Down select, Enter continues, Escape goes back one section. Escape at Home
 stays in the session; choose Quit to leave. `/` opens a searchable action palette.
 Commands and recoverable failures return to their section. Ctrl+C cancels a
-running command; when idle it exits. The detached host keeps running.
+running command or a form; on Home it exits. The detached host keeps running.
 Fully specified commands always
 execute directly. The legacy `host --phone default` shorthand remains supported.
 
-Send state retains its output choice and Preview mode until the session ends.
+Send state saves its preferred output across launches and retains Preview mode until the session ends.
 Choose a state and press Enter to send; there is no repeated target or Run/Copy
 dialog. Change output lists mounted devices and saved phones; Auto selects one
 USB device, otherwise the default/sole saved phone. Preview never sends.
-Saved application-wide UI preferences and first-run installation are still planned.
+Settings → Preferences saves output, brightness, profile/model and export shell;
+see [[Configuration]]. Home shows these defaults, host status and the last action.
+Esc/Ctrl+C cancels forms while retaining text for retry; Ctrl+U clears text.
 
 Advanced guided actions display a single-line script command before running. Review offers
 Run, Copy command, Choose shell and Back. Simple arguments remain unquoted.

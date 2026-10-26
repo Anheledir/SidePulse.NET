@@ -33,38 +33,101 @@ public static class Interactive
             group = null;
         }
     }
-    public static MenuItem? Choose(string title, IReadOnlyList<MenuItem> items)
+    public static MenuItem? Choose(string title, IReadOnlyList<MenuItem> items, string? context = null, bool search = false)
     {
         if (!TerminalMode.Interactive) throw new ArgumentException("This action requires an interactive terminal.");
         var selected = InSession ? Math.Clamp(Selections.GetValueOrDefault(title), 0, items.Count - 1) : 0;
+        var filter = "";
+        var visible = items.ToArray();
         MenuItem? result = null;
         IRenderable Draw()
         {
-            var rows = items.Select((item, i) => (IRenderable)new Text((i == selected ? "> " : "  ") + item.Label, i == selected ? new Style(Color.Cyan1, decoration: Decoration.Bold) : Style.Plain)).ToList();
-            rows.Add(new Text(InSession ? "\n↑/↓ select · Enter continue · Esc back · / actions" : "\n↑/↓ select · Enter continue · Esc back", new Style(Color.Grey)));
-            if (items[selected].Arguments is { } arguments) rows.Add(new Panel(new Text(TerminalMode.Command(arguments))).Header("Script command").Border(BoxBorder.Rounded));
+            var rows = visible.Select((item, i) => (IRenderable)new Text((i == selected ? "> " : "  ") + item.Label, i == selected ? new Style(Color.Cyan1, decoration: Decoration.Bold) : Style.Plain)).ToList();
+            if (context is not null) rows.Insert(0, new Text(context + "\n"));
+            if (search) rows.Insert(0, new Text("Search: " + filter));
+            if (visible.Length == 0) rows.Add(new Text("No matching actions."));
+            rows.Add(new Text(search ? "\nType to search · Enter continue · Esc back" : InSession ? "\n↑/↓ select · Enter continue · Esc back · / actions" : "\n↑/↓ select · Enter continue · Esc back", new Style(Color.Grey)));
+            if (visible.Length > 0 && visible[selected].Arguments is { } arguments)
+            {
+                try { rows.Add(new Panel(new Text(TerminalMode.Command(arguments))).Header("Script command").Border(BoxBorder.Rounded)); }
+                catch (ArgumentException) { rows.Add(new Text("Command export unavailable. Choose another export shell in Settings.")); }
+            }
             return new Panel(new Rows(rows)).Header(Markup.Escape(title)).Border(BoxBorder.Rounded);
         }
-        AnsiConsole.Live(Draw()).AutoClear(true).Start(live =>
+        var controlC = Console.TreatControlCAsInput;
+        try
         {
-            live.Refresh();
-            while (true)
+            Console.TreatControlCAsInput = true;
+            AnsiConsole.Live(Draw()).AutoClear(true).Start(live =>
             {
-                var input = Console.ReadKey(true);
-                var key = input.Key;
-                if (InSession && input.KeyChar == '/') throw new ActionPaletteRequested();
-                if (key == ConsoleKey.Escape) break;
-                if (key == ConsoleKey.Enter) { result = items[selected]; break; }
-                if (key == ConsoleKey.UpArrow) selected = (selected + items.Count - 1) % items.Count;
-                if (key == ConsoleKey.DownArrow) selected = (selected + 1) % items.Count;
-                if (InSession) Selections[title] = selected;
-                live.UpdateTarget(Draw()); live.Refresh();
-            }
-        });
+                live.Refresh();
+                while (true)
+                {
+                    var input = Console.ReadKey(true);
+                    var key = input.Key;
+                    if (input.KeyChar == '\u0003')
+                    {
+                        if (title == "SidePulse.NET · Home") throw new SessionQuitRequested();
+                        break;
+                    }
+                    if (InSession && !search && input.KeyChar == '/') throw new ActionPaletteRequested();
+                    if (key == ConsoleKey.Escape) break;
+                    if (key == ConsoleKey.Enter && visible.Length > 0) { result = visible[selected]; break; }
+                    if (search && (key == ConsoleKey.Backspace || !char.IsControl(input.KeyChar)))
+                    {
+                        filter = key == ConsoleKey.Backspace ? filter[..Math.Max(0, filter.Length - 1)] : filter + input.KeyChar;
+                        visible = items.Where(item => item.Label.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToArray();
+                        selected = 0;
+                    }
+                    if (visible.Length > 0)
+                    {
+                        if (key == ConsoleKey.UpArrow) selected = (selected + visible.Length - 1) % visible.Length;
+                        if (key == ConsoleKey.DownArrow) selected = (selected + 1) % visible.Length;
+                    }
+                    if (InSession && !search) Selections[title] = selected;
+                    live.UpdateTarget(Draw()); live.Refresh();
+                }
+            });
+        }
+        finally { Console.TreatControlCAsInput = controlC; }
         return result;
     }
-    public static string Ask(string prompt, string? value = null) => AnsiConsole.Prompt(value is null ? new TextPrompt<string>(Markup.Escape(prompt)) : new TextPrompt<string>(Markup.Escape(prompt)).DefaultValue(value));
-    public static T Pick<T>(string title, IEnumerable<T> values) where T : notnull => AnsiConsole.Prompt(new SelectionPrompt<T>().Title(Markup.Escape(title)).AddChoices(values));
+    private static readonly Dictionary<string, string> Drafts = new();
+    public static string Ask(string prompt, string? value = null)
+    {
+        if (!InSession) return AnsiConsole.Prompt(value is null ? new TextPrompt<string>(Markup.Escape(prompt)) : new TextPrompt<string>(Markup.Escape(prompt)).DefaultValue(value));
+        var text = Drafts.GetValueOrDefault(prompt, value ?? "");
+        Console.WriteLine(prompt + " · Enter save · Esc/Ctrl+C back (input retained) · Ctrl+U clear");
+        Console.Write(text);
+        var controlC = Console.TreatControlCAsInput;
+        try
+        {
+            Console.TreatControlCAsInput = true;
+            while (true)
+            {
+                var key = Console.ReadKey(true);
+                if (key.Key == ConsoleKey.Escape || key.KeyChar == '\u0003') { Drafts[prompt] = text; Console.WriteLine(); throw new FormCancelled(); }
+                if (key.Key == ConsoleKey.Enter && !string.IsNullOrWhiteSpace(text)) { Drafts[prompt] = text; Console.WriteLine(); return text; }
+                if (key.KeyChar == '\u0015') { Console.Write(new string('\b', text.Length) + new string(' ', text.Length) + new string('\b', text.Length)); text = ""; continue; }
+                if (key.Key == ConsoleKey.Backspace && text.Length > 0) { text = text[..^1]; Console.Write("\b \b"); }
+                else if (!char.IsControl(key.KeyChar)) { text += key.KeyChar; Console.Write(key.KeyChar); }
+            }
+        }
+        finally { Console.TreatControlCAsInput = controlC; }
+    }
+    public static T Pick<T>(string title, IEnumerable<T> values) where T : notnull
+    {
+        var entries = values.ToArray();
+        if (!InSession) return AnsiConsole.Prompt(new SelectionPrompt<T>().Title(Markup.Escape(title)).AddChoices(entries));
+        var selected = Choose(title, entries.Select(v => new MenuItem(v.ToString()!)).ToArray()) ?? throw new FormCancelled();
+        return entries.First(v => v.ToString() == selected.Label);
+    }
+    public static bool Confirm(string title, bool defaultValue = false)
+    {
+        if (!InSession) return AnsiConsole.Confirm(title, defaultValue);
+        var selected = Choose(title, (defaultValue ? new[] { "Yes", "No" } : new[] { "No", "Yes" }).Select(v => new MenuItem(v)).ToArray()) ?? throw new FormCancelled();
+        return selected.Label == "Yes";
+    }
     public static string[]? Review(List<string> arguments)
     {
         var shell = TerminalMode.Shell;
@@ -74,7 +137,7 @@ public static class Interactive
             var action = Choose("Ready", [new("Run", arguments.ToArray()), new("Copy command"), new("Choose shell"), new("Back")]);
             if (action is null || action.Label == "Back") return null;
             if (action.Label == "Run") return arguments.ToArray();
-            if (action.Label == "Choose shell") { shell = Pick("Command shell", new[] { "powershell", "bash", "cmd" }); continue; }
+            if (action.Label == "Choose shell") { shell = Pick("Command shell", new[] { "powershell", "bash", "cmd" }); PreferenceStore.Default.Save(PreferenceStore.Default.Read() with { Shell = shell }); continue; }
             try { Console.WriteLine(TerminalMode.Copy(TerminalMode.Command(arguments, shell)) ? "Command copied." : "Clipboard unavailable. Select and copy the displayed command."); }
             catch (ArgumentException ex) { Console.Error.WriteLine(ex.Message); shell = TerminalMode.Shell; }
         }
@@ -97,8 +160,8 @@ public static class Interactive
             if (action is null) return null;
             if (action.Arguments is { } direct) return direct;
             var command = new List<string> { "update", "install" };
-            if (AnsiConsole.Confirm("Include prereleases?", false)) command.Add("--prerelease");
-            if (AnsiConsole.Confirm("Preview the update only?", true)) command.Add("--dry-run");
+            if (Confirm("Include prereleases?", false)) command.Add("--prerelease");
+            if (Confirm("Preview the update only?", true)) command.Add("--dry-run");
             return Review(command);
         }
         if (group == "about")
@@ -122,7 +185,7 @@ public static class Interactive
                 if (action.Label == "Preview .LED file") command.AddRange(["--file", Path.GetFullPath(Ask("Source .LED file"))]);
                 else command.Add(Pick("Pattern", AnimationLibrary.Default.List().Where(p => p.Models.Contains(Enum.Parse<DeviceModel>(model, true))).Select(p => p.Name)));
                 command.AddRange(["--model", model]);
-                command.AddRange(["--brightness", Ask("Brightness percent", "100")]);
+                command.AddRange(["--brightness", Ask("Brightness percent", PreferenceStore.Default.Read().Brightness.ToString())]);
                 if (verb == "apply") command.AddRange(Target());
                 if (verb == "export") command.AddRange(["--output", Path.GetFullPath(Ask("Destination .LED file"))]);
             }
@@ -142,8 +205,8 @@ public static class Interactive
             if (action.Arguments is { } direct) return direct;
             var command = new List<string> { "agents", action.Label.ToLowerInvariant(), Pick("Agent", Enum.GetValues<AgentProvider>()).ToString() };
             if (action.Label == "Install") command.AddRange(["--exe", Path.GetFullPath(Ask("Published SidePulse.NET executable", Environment.ProcessPath!))]);
-            if (AnsiConsole.Confirm("Use an explicit configuration file?", false)) command.AddRange(["--config", Path.GetFullPath(Ask("Configuration path"))]);
-            if (action.Label != "Status" && AnsiConsole.Confirm("Preview changes only?", true)) command.Add("--dry-run");
+            if (Confirm("Use an explicit configuration file?", false)) command.AddRange(["--config", Path.GetFullPath(Ask("Configuration path"))]);
+            if (action.Label != "Status" && Confirm("Preview changes only?", true)) command.Add("--dry-run");
             return Review(command);
         }
         if (group == "host")
@@ -152,7 +215,7 @@ public static class Interactive
             if (action is null) return null;
             if (action.Arguments is { } direct) return direct;
             var command = new List<string> { "host", "start" }; command.AddRange(Target());
-            if (AnsiConsole.Confirm("Use a saved animation profile?", false)) command.AddRange(["--profile", Ask("Profile name"), "--model", Pick("LED layout", Enum.GetValues<DeviceModel>()).ToString()]);
+            if (Confirm("Use a saved animation profile?", false)) command.AddRange(["--profile", Ask("Profile name"), "--model", Pick("LED layout", Enum.GetValues<DeviceModel>()).ToString()]);
             return Review(command);
         }
         if (group == "link")

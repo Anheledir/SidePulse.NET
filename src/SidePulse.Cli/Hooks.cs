@@ -96,6 +96,8 @@ public sealed class HookCommand : AsyncCommand<HookSettings>
 }
 public sealed class HostSettings : TargetSettings
 {
+    [CommandOption("--no-profile")] public bool NoProfile { get; init; }
+    [CommandOption("--brightness <PERCENT>")] public int? Brightness { get; init; }
     [CommandOption("--profile <NAME>")]
     public string? Profile { get; init; }
     [CommandOption("--model <MODEL>")]
@@ -117,7 +119,10 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, HostSettings settings, CancellationToken cancellationToken)
     {
-        var patterns = AnimationLibrary.ResolveProfile(settings.Profile, settings.Model, settings.Device);
+        if (settings.NoProfile && settings.Profile is not null) throw new ArgumentException("Choose --profile or --no-profile.");
+        var preferences = PreferenceStore.Default.Read();
+        var patterns = AnimationLibrary.ResolveProfile(settings.NoProfile ? null : settings.Profile ?? preferences.Profile, settings.Model ?? preferences.Model, settings.Device ?? preferences.Device)
+            .ToDictionary(item => item.Key, item => AnimationLibrary.WithBrightness(item.Value, settings.Brightness ?? (preferences.Brightness == 100 ? null : preferences.Brightness)));
         if (settings.Background) HostLogs.Detach();
         using var shutdown = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         ConsoleCancelEventHandler cancel = (_, args) => { args.Cancel = true; shutdown.Cancel(); };
@@ -134,7 +139,7 @@ public sealed class HostCommand : AsyncCommand<HostSettings>
             {
                 await foreach (var program in outputs.Reader.ReadAllAsync(shutdown.Token))
                 {
-                    try { await Delivery.Send(settings, program, shutdown.Token); }
+                    try { await Delivery.Send(settings, program, shutdown.Token, preferences); }
                     catch (Exception ex) when (ex is IOException or ArgumentException or OperationCanceledException)
                     {
                         Console.Error.WriteLine("Output unavailable; check the device, token environment variable or network.");

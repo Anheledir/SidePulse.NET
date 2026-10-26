@@ -10,8 +10,8 @@ public class PatternSettings : CommandSettings
 {
     [CommandArgument(0, "[NAME]")] public string? Name { get; init; }
     [CommandOption("--file <PATH>")] public string? File { get; init; }
-    [CommandOption("--model <MODEL>")] public DeviceModel Model { get; init; } = DeviceModel.Dot;
-    [CommandOption("--brightness <PERCENT>")] public int? Brightness { get; init; }
+    [CommandOption("--model <MODEL>")] public DeviceModel Model { get; init; } = PreferenceStore.Default.Read().Model ?? DeviceModel.Dot;
+    [CommandOption("--brightness <PERCENT>")] public int? Brightness { get; init; } = PreferenceStore.Default.Read().Brightness is var value && value != 100 ? value : null;
     [CommandOption("--json")] public bool Json { get; init; }
     public override ValidationResult Validate()
     {
@@ -154,11 +154,12 @@ public sealed class PatternApplyCommand : AsyncCommand<PatternApplySettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, PatternApplySettings settings, CancellationToken cancellationToken)
     {
-        var model = settings.Model ?? AnimationLibrary.DetectModel(settings.Device);
+        var preferences = PreferenceStore.Default.Read();
+        var model = settings.Model ?? preferences.Model ?? AnimationLibrary.DetectModel(settings.Device ?? preferences.Device);
         var raw = settings.File is { } file ? new LedProgram(await System.IO.File.ReadAllTextAsync(file, cancellationToken)) : AnimationLibrary.Default.Get(settings.Name!, model);
-        var program = AnimationLibrary.WithBrightness(raw, settings.Brightness);
+        var program = AnimationLibrary.WithBrightness(raw, settings.Brightness ?? (preferences.Brightness == 100 ? null : preferences.Brightness));
         Animation.Parse(program, model);
-        await Delivery.Send(settings, program, cancellationToken); Delivery.Receipt(settings, program);
+        await Delivery.Send(settings, program, cancellationToken, preferences); Delivery.Receipt(settings, program);
         return 0;
     }
 }
@@ -214,7 +215,7 @@ public sealed class ProfileSetCommand : Command<ProfileSettings>
         if (!AnimationLibrary.Default.List().Any(p => p.Name == settings.Pattern)) throw new ArgumentException("Pattern was not found. Import it first.");
         AnimationProfile profile;
         try { profile = AnimationLibrary.Default.LoadProfile(settings.Name); }
-        catch (FileNotFoundException) { profile = new([]); }
+        catch (IOException ex) when (ex is FileNotFoundException or DirectoryNotFoundException) { profile = new([]); }
         profile.States[settings.State.Value] = settings.Pattern;
         profile = profile with { Brightness = settings.Brightness ?? profile.Brightness };
         var path = AnimationLibrary.Default.SaveProfile(settings.Name, profile, true);

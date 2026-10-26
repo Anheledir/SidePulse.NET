@@ -65,10 +65,10 @@ public class TargetSettings : CommandSettings
 
 public static class Delivery
 {
-    public static async Task Send(TargetSettings settings, LedProgram program, CancellationToken cancellationToken)
+    public static async Task Send(TargetSettings settings, LedProgram program, CancellationToken cancellationToken, Preferences? preferences = null)
     {
         if (settings.DryRun) return;
-        var target = OutputTarget.Resolve(settings.Device, settings.Phone, settings.TokenEnvironment,
+        var target = (preferences ?? PreferenceStore.Default.Read()).ResolveOutput(settings.Device, settings.Phone, settings.TokenEnvironment,
             DeviceTransport.Discover, () => File.Exists(LinkStore.DefaultPath) ? PhoneStores.Open().List() : []);
         if (target.Transport == OutputTransport.Phone)
         {
@@ -95,12 +95,17 @@ public static class Delivery
 
 public sealed class StateSettings : TargetSettings
 {
+    [CommandOption("--brightness <PERCENT>")] public int? Brightness { get; init; }
+    [CommandOption("--profile <NAME>")] public string? Profile { get; init; }
+    [CommandOption("--no-profile")] public bool NoProfile { get; init; }
+    [CommandOption("--model <MODEL>")] public DeviceModel? Model { get; init; }
     [CommandArgument(0, "<STATE>")]
     public AgentState State { get; init; }
     public override ValidationResult Validate()
     {
         var target = base.Validate();
         if (!target.Successful) return target;
+        if (Brightness is < 0 or > 100 || Model is { } model && !Enum.IsDefined(model)) return ValidationResult.Error("Choose brightness 0..100 and model dot or pro.");
         return Enum.IsDefined(State) ? ValidationResult.Success() : ValidationResult.Error("Unknown agent state.");
     }
 }
@@ -108,8 +113,11 @@ public sealed class StateCommand : AsyncCommand<StateSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, StateSettings settings, CancellationToken cancellationToken)
     {
-        var program = LedProgram.ForState(settings.State);
-        await Delivery.Send(settings, program, cancellationToken);
+        if (settings.NoProfile && settings.Profile is not null) throw new ArgumentException("Choose --profile or --no-profile.");
+        var preferences = PreferenceStore.Default.Read();
+        var profile = settings.NoProfile ? null : settings.Profile ?? preferences.Profile;
+        var program = AnimationLibrary.WithBrightness(AnimationLibrary.ResolveProfile(profile, settings.Model ?? preferences.Model, settings.Device ?? preferences.Device)[settings.State], settings.Brightness ?? (preferences.Brightness == 100 ? null : preferences.Brightness));
+        await Delivery.Send(settings, program, cancellationToken, preferences);
         Delivery.Receipt(settings, program);
         return 0;
     }
