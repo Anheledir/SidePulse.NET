@@ -1,4 +1,4 @@
-"""Compare public read-only JSON responses with a published baseline executable."""
+"""Compare public JSON responses and their filesystem effects with a published baseline executable."""
 import argparse
 import hashlib
 import json
@@ -39,6 +39,16 @@ def normalize(value, executable):
     return value
 
 
+def snapshot(root):
+    if not root.exists():
+        return {}
+    entries = {'.': ('directory', root.stat().st_mode & 0o777)}
+    for path in sorted(root.rglob('*')):
+        name = str(path.relative_to(root))
+        entries[name] = ('directory', path.stat().st_mode & 0o777) if path.is_dir() else ('file', hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mode & 0o777)
+    return entries
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('baseline', type=Path)
@@ -46,9 +56,12 @@ def main():
     args = parser.parse_args()
     baseline, candidate = args.baseline.resolve(), args.candidate.resolve()
     with tempfile.TemporaryDirectory(prefix='spn JSON compatibility ') as temporary:
-        environment = dict(os.environ, SIDEPULSE_NET_HOME=str(Path(temporary) / 'config'))
+        config = Path(temporary) / 'config'
+        environment = dict(os.environ, SIDEPULSE_NET_HOME=str(config))
         for command in COMMANDS:
             results = []
+            before = snapshot(config)
+            baseline_files = None
             for executable in (baseline, candidate):
                 response = subprocess.run([str(executable), *command], env=environment,
                                           capture_output=True, text=True, timeout=15)
@@ -58,8 +71,16 @@ def main():
                 except ValueError as error:
                     raise AssertionError(f'Invalid JSON for {command}, exit {response.returncode}') from error
                 results.append((response.returncode, value))
+                files = snapshot(config)
+                if executable == baseline:
+                    baseline_files = files
+                else:
+                    assert files == baseline_files, f'Candidate changed configuration beyond baseline: {command}'
+                if '--dry-run' in command:
+                    assert files == before, f'Preview created or changed configuration: {command}'
             assert results[0] == results[1], (command, results)
-        assert not (Path(temporary) / 'config').exists(), 'Read-only compatibility probes created configuration'
+        # Existing link-list behavior can create an empty store lock on native-vault
+        # platforms. Compare those effects rather than asserting a false baseline.
     print(f'{len(COMMANDS)} public JSON command/error responses match baseline.')
 
 

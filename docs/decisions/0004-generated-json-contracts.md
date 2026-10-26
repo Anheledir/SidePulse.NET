@@ -46,9 +46,10 @@ The normal CLI and lifecycle smoke run with reflection JSON disabled.
 python3 scripts/json_compatibility.py /path/to/baseline/spn /path/to/candidate/spn
 ```
 
-This compares 22 read-only public JSON/error responses. Only executable-directory
-and derived receipt-key differences are normalized. The isolated application config
-must remain absent. Run against a stopped host; a live externally changing session
+This compares 22 public JSON/error responses. Only executable-directory
+and derived receipt-key differences are normalized. Preview commands must leave
+configuration unchanged; other probes must add no filesystem effects beyond the
+baseline. The existing native-vault phone list can create an empty store lock. Run against a stopped host; a live externally changing session
 is not deterministic compatibility evidence. JSON compatibility CI publishes both
 revisions with the same SDK on native Windows/Linux/macOS and runs this comparison.
 
